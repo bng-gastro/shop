@@ -1,0 +1,162 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>bng SharePoint Test</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: 'Segoe UI', Arial, sans-serif; background: #F0F2F5; padding: 32px; color: #1A1F2E; }
+  h1 { font-size: 1.3rem; font-weight: 700; margin-bottom: 24px; }
+  .card { background: #fff; border-radius: 10px; box-shadow: 0 1px 4px rgba(0,0,0,0.08); padding: 24px; margin-bottom: 20px; }
+  .card h2 { font-size: 0.85rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.5px; color: #6B7489; margin-bottom: 16px; }
+  .result { display: flex; align-items: center; gap: 10px; padding: 10px 14px; border-radius: 7px; font-size: 0.88rem; margin-bottom: 8px; }
+  .result.ok  { background: #E6F5EE; color: #117C45; }
+  .result.err { background: #FEE2E2; color: #991B1B; }
+  .result.pending { background: #F0F2F5; color: #6B7489; }
+  .icon { font-size: 1.1rem; flex-shrink: 0; }
+  button {
+    font-family: inherit; font-size: 0.85rem; font-weight: 600;
+    background: #1B4FBF; color: #fff; border: none; border-radius: 8px;
+    padding: 10px 20px; cursor: pointer; margin-top: 8px;
+    transition: background 0.15s;
+  }
+  button:hover { background: #153ea0; }
+  button:disabled { background: #94a3b8; cursor: not-allowed; }
+  .detail { font-size: 0.75rem; color: #6B7489; margin-top: 4px; font-family: monospace; word-break: break-all; }
+  input[type=text] {
+    font-family: inherit; font-size: 0.85rem; padding: 8px 12px;
+    border: 1.5px solid #E2E6EC; border-radius: 7px; width: 100%;
+    margin-bottom: 10px; color: #1A1F2E; background: #F7F8FA;
+  }
+  input:focus { outline: none; border-color: #1B4FBF; }
+  .summary { font-size: 0.95rem; font-weight: 600; margin-top: 8px; }
+</style>
+</head>
+<body>
+
+<h1>bng Portal — GitHub Pages Test</h1>
+
+<!-- Test 1: JavaScript -->
+<div class="card">
+  <h2>Test 1 · JavaScript</h2>
+  <div class="result ok" id="t1">
+    <span class="icon">✓</span>
+    <span>JavaScript läuft — wenn Sie diesen Text sehen, ist JS aktiv.</span>
+  </div>
+  <div class="detail" id="t1-detail"></div>
+</div>
+
+<!-- Test 2: localStorage -->
+<div class="card">
+  <h2>Test 2 · Lokaler Speicher (localStorage)</h2>
+  <div class="result pending" id="t2"><span class="icon">⏳</span><span>Wird geprüft…</span></div>
+  <div class="detail" id="t2-detail"></div>
+</div>
+
+<!-- Test 3: Fetch / externe API -->
+<div class="card">
+  <h2>Test 3 · Externe API-Verbindung</h2>
+  <p style="font-size:0.82rem;color:#6B7489;margin-bottom:12px">
+    Testet ob GitHub Pages ausgehende Fetch-Anfragen an externe Server erlaubt.
+    Wir rufen einen hármlosen öffentlichen Endpunkt ab.
+  </p>
+  <div class="result pending" id="t3"><span class="icon">⏳</span><span>Noch nicht gestartet</span></div>
+  <div class="detail" id="t3-detail"></div>
+  <button onclick="testFetch()">Fetch-Test starten</button>
+</div>
+
+<!-- Test 4: Datei-Upload -->
+<div class="card">
+  <h2>Test 4 · Datei-Upload (Excel lesen)</h2>
+  <p style="font-size:0.82rem;color:#6B7489;margin-bottom:12px">
+    Lädt eine beliebige Excel-Datei hoch und prüft ob der Browser sie lesen kann.
+  </p>
+  <input type="file" id="file-input" accept=".xlsx,.xls,.csv" style="display:none">
+  <button onclick="document.getElementById('file-input').click()">Excel-Datei auswählen</button>
+  <div class="result pending" id="t4" style="margin-top:10px"><span class="icon">⏳</span><span>Noch nicht gestartet</span></div>
+  <div class="detail" id="t4-detail"></div>
+</div>
+
+<!-- Zusammenfassung -->
+<div class="card">
+  <h2>Zusammenfassung</h2>
+  <div id="summary" class="summary" style="color:#6B7489">Tests werden durchgeführt…</div>
+</div>
+
+<script>
+function setResult(id, ok, msg, detail) {
+  const el = document.getElementById(id);
+  el.className = 'result ' + (ok ? 'ok' : 'err');
+  el.innerHTML = `<span class="icon">${ok ? '✓' : '✗'}</span><span>${msg}</span>`;
+  if (detail) document.getElementById(id + '-detail').textContent = detail;
+  updateSummary();
+}
+
+function updateSummary() {
+  const results = ['t1','t2','t3','t4'].map(id => {
+    const el = document.getElementById(id);
+    if (el.classList.contains('ok')) return 'ok';
+    if (el.classList.contains('err')) return 'err';
+    return 'pending';
+  });
+  const ok = results.filter(r => r === 'ok').length;
+  const err = results.filter(r => r === 'err').length;
+  const pending = results.filter(r => r === 'pending').length;
+  const sum = document.getElementById('summary');
+  if (pending > 0) {
+    sum.textContent = `${ok} von 4 Tests bestanden ┐ ${pending} noch ausstehend`;
+    sum.style.color = '#6B7489';
+  } else if (err === 0) {
+    sum.textContent = '✓ Alle 4 Tests bestanden — GitHub Pages ist vollständig kompatibel!';
+    sum.style.color = '#117C45';
+  } else {
+    sum.textContent = `${ok} von 4 Tests bestanden ┐ ${err} fehlgeschlagen. Bitte Screenshot schicken.`;
+    sum.style.color = '#991B1B';
+  }
+}
+
+document.getElementById('t1-detail').textContent = 'Browser: ' + navigator.userAgent.substring(0, 80);
+
+try {
+  const key = 'bng_test_' + Date.now();
+  localStorage.setItem(key, 'ok');
+  const val = localStorage.getItem(key);
+  localStorage.removeItem(key);
+  setResult('t2', val === 'ok', val === 'ok' ? 'localStorage funktioniert — Verlaufsdaten können gespeichert werden.' : 'localStorage lesen fehlgeschlagen.', '');
+} catch(e) {
+  setResult('t2', false, 'localStorage nicht verfügbar: ' + e.message, '');
+}
+
+async function testFetch() {
+  document.getElementById('t3').className = 'result pending';
+  document.getElementById('t3').innerHTML = '<span class="icon">⏳</span><span>Verbindung wird getestet…</span>';
+  try {
+    const res = await fetch('https://api.ipify.org?format=json');
+    if (res.ok) {
+      const data = await res.json();
+      setResult('t3', true, 'Fetch funktioniert — externe APIs sind erreichbar.', 'IP: ' + data.ip);
+    } else {
+      setResult('t3', false, 'HTTP ' + res.status, '');
+    }
+  } catch(e) {
+    setResult('t3', false, 'Fetch blockiert: ' + e.message, '');
+  }
+}
+
+document.getElementById('file-input').addEventListener('change', function(e) {
+  const file = e.target.files[0];
+  if (!file) return;
+  const reader = new FileReader();
+  reader.onload = function(ev) {
+    const size = (ev.target.result.byteLength / 1024).toFixed(1);
+    setResult('t4', true, `Datei erfolgreich gelesen — Excel-Upload funktioniert.`, `${file.name} | ${size} KB | ${file.type || 'unbekannt'}`);
+  };
+  reader.onerror = () => setResult('t4', false, 'Lesefehler', '');
+  reader.readAsArrayBuffer(file);
+});
+
+updateSummary();
+</script>
+</body>
+</html>
