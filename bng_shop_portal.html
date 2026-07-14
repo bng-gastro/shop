@@ -1,0 +1,2662 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>bng service — Shop-Portal</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+<style>
+* { font-family: Arial, sans-serif !important; }
+
+:root {
+  --bng-green:#3a7c2a; --bng-green-dark:#2a5c1e; --bng-green-light:#eef6eb;
+  --bg:#f4f6f8; --surface:#fff; --border:#e0e4e8;
+  --text:#1a2030; --muted:#64748b; --accent:#1B4FBF;
+  --red:#c0392b; --amber:#d97706; --radius:10px;
+  --shadow:0 1px 3px rgba(0,0,0,.06),0 2px 8px rgba(0,0,0,.04);
+}
+*{box-sizing:border-box;margin:0;padding:0}
+/* nav */
+.nav{background:var(--bng-green-dark);display:flex;align-items:center;height:54px;box-shadow:0 2px 8px rgba(0,0,0,.15);position:sticky;top:0;z-index:100}
+.nav-logo{display:flex;align-items:center;gap:10px;padding:0 24px;height:100%;border-right:1px solid rgba(255,255,255,.12)}
+.logo-bng{font-size:1.35rem;font-weight:900;color:#fff;letter-spacing:-.5px}
+.logo-sub{font-size:.68rem;color:rgba(255,255,255,.65);font-weight:500;letter-spacing:.5px;text-transform:uppercase}
+.nav-tabs{display:flex;height:100%}
+.nav-tab{display:flex;align-items:center;gap:7px;padding:0 22px;height:100%;font-size:.84rem;font-weight:600;color:rgba(255,255,255,.7);cursor:pointer;border:none;border-top:3px solid transparent;border-bottom:3px solid transparent;background:none;font-family:inherit;white-space:nowrap;transition:color .15s,background .15s}
+.nav-tab:hover{color:#fff;background:rgba(255,255,255,.06)}
+.nav-tab.active{color:#fff;border-bottom:3px solid #8ecf6e;background:rgba(255,255,255,.08)}
+.nav-right{margin-left:auto;padding:0 20px;display:flex;align-items:center;gap:10px}
+.nav-badge{font-size:.72rem;color:rgba(255,255,255,.55)}
+/* pages */
+.page{display:none;padding:24px}
+.page.active{display:block}
+/* upload */
+.upload-grid{display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:20px}
+@media(max-width:700px){.upload-grid{grid-template-columns:1fr}}
+.upload-zone{background:var(--surface);border:2px dashed var(--border);border-radius:var(--radius);padding:28px 20px;text-align:center;cursor:pointer;transition:border-color .2s,background .2s}
+.upload-zone:hover,.upload-zone.drag{border-color:var(--bng-green);background:var(--bng-green-light)}
+.upload-zone input{display:none}
+.upload-icon{font-size:1.8rem;margin-bottom:6px}
+.upload-label{font-size:.72rem;font-weight:700;text-transform:uppercase;letter-spacing:.5px;color:var(--muted);margin-bottom:4px}
+.upload-title{font-size:.9rem;font-weight:600;color:var(--text);margin-bottom:3px}
+.upload-sub{font-size:.75rem;color:var(--muted)}
+.upload-zone.loaded{border-color:var(--bng-green);border-style:solid;background:var(--bng-green-light)}
+/* period selector */
+.period-bar{display:flex;align-items:center;gap:12px;margin-bottom:20px;flex-wrap:wrap}
+.period-bar label{font-size:.78rem;font-weight:700;text-transform:uppercase;letter-spacing:.5px;color:var(--muted)}
+.period-sel{font-family:inherit;font-size:.88rem;font-weight:600;color:var(--text);background:var(--surface);border:1.5px solid var(--border);border-radius:7px;padding:8px 14px;cursor:pointer;outline:none;transition:border-color .15s}
+.period-sel:focus{border-color:var(--bng-green)}
+.period-sel:disabled{opacity:.4;cursor:not-allowed}
+/* kpis */
+.kpi-row{display:grid;grid-template-columns:repeat(auto-fit,minmax(170px,1fr));gap:14px;margin-bottom:20px}
+.kpi{background:var(--surface);border-radius:var(--radius);box-shadow:var(--shadow);padding:16px 18px;text-align:right;border-left:4px solid var(--bng-green)}
+.kpi.blue{border-left-color:var(--accent)}
+.kpi.red{border-left-color:var(--red)}
+.kpi.amber{border-left-color:var(--amber)}
+.kpi-label{font-size:.68rem;font-weight:700;text-transform:uppercase;letter-spacing:.6px;color:var(--muted);margin-bottom:4px}
+.kpi-value{font-size:1.35rem;font-weight:700;color:var(--text);line-height:1}
+.kpi-sub{font-size:.72rem;color:var(--muted);margin-top:3px}
+/* table */
+.card{background:var(--surface);border-radius:var(--radius);box-shadow:var(--shadow);margin-bottom:20px}
+.card-header{padding:14px 18px;border-bottom:1px solid var(--border);display:flex;align-items:center;gap:10px;flex-wrap:wrap}
+.card-title{font-size:.72rem;font-weight:700;text-transform:uppercase;letter-spacing:.6px;color:var(--muted)}
+.filter-bar{display:flex;align-items:center;gap:10px;margin-left:auto;flex-wrap:wrap}
+.filter-sel{font-family:inherit;font-size:.82rem;color:var(--text);background:var(--bg);border:1.5px solid var(--border);border-radius:6px;padding:6px 10px;cursor:pointer;outline:none}
+.inv-table{width:100%;border-collapse:collapse;font-size:.82rem}
+.inv-table th{text-align:left;padding:9px 14px;font-size:.67rem;font-weight:700;text-transform:uppercase;letter-spacing:.5px;color:var(--muted);border-bottom:2px solid var(--border);background:#f8fafc;white-space:nowrap}.inv-table th.r{min-width:110px}
+.inv-table th.r,.inv-table td.r{text-align:right}
+.inv-table td{padding:11px 14px;border-bottom:1px solid var(--border);vertical-align:middle;white-space:nowrap}
+.inv-table tr:last-child td{border-bottom:none}
+.inv-table tr:hover td{background:#f8fafc}
+.inv-table tr.done td{opacity:.35}
+/* badges */
+.badge{display:inline-block;font-size:.64rem;font-weight:700;padding:2px 8px;border-radius:20px}.inv-table td.r,.inv-table th.r{min-width:110px;white-space:nowrap}.inv-table td.r,.inv-table th.r{min-width:110px}
+.b-ok{background:var(--bng-green-light);color:var(--bng-green-dark)}
+.b-warn{background:#fef3c7;color:#92400e}
+.b-missing{background:#fee2e2;color:#991b1b}
+.b-diff{background:#fde68a;color:#78350f}
+.b-done{background:#e0e7ff;color:#3730a3}.b-gutschrift{background:#f3e8ff;color:#6b21a8}.b-gutschrift{background:#f3e8ff;color:#6b21a8}
+/* correction input */
+.corr-input{font-family:inherit;font-size:.8rem;text-align:right;width:120px;padding:4px 8px;border:1.5px solid var(--border);border-radius:5px;background:#fff;color:var(--text);outline:none}
+.corr-input:focus{border-color:var(--bng-green)}
+.corr-input.mod{border-color:var(--amber);background:#fffbeb}
+/* buttons */
+.btn{display:inline-flex;align-items:center;gap:6px;font-family:inherit;font-size:.82rem;font-weight:600;padding:8px 16px;border-radius:7px;border:none;cursor:pointer;transition:background .15s}
+.btn-primary{background:var(--bng-green);color:#fff}
+.btn-primary:hover{background:var(--bng-green-dark)}
+.btn-secondary{background:var(--bg);color:var(--text);border:1.5px solid var(--border)}
+.btn-secondary:hover{background:var(--border)}
+.btn-sm{padding:5px 12px;font-size:.76rem}
+/* diff warning */
+.diff-warning{background:#fef3c7;border:1px solid #fcd34d;border-radius:8px;padding:12px 16px;font-size:.82rem;margin-bottom:16px;display:none}
+.diff-warning.show{display:block}
+/* history */
+.hist-list{display:flex;flex-direction:column;gap:10px;padding:16px}
+.hist-item{background:var(--bg);border-radius:8px;padding:12px 16px;display:flex;justify-content:space-between;align-items:center;font-size:.82rem}
+.hi-label{font-weight:700}
+.hi-date{font-size:.72rem;color:var(--muted);margin-top:2px}
+.hi-amount{font-weight:700;text-align:right}
+.hi-prov{font-size:.72rem;color:var(--bng-green-dark);text-align:right}
+/* toast */
+#toast{position:fixed;bottom:24px;right:24px;background:var(--bng-green-dark);color:#fff;border-radius:8px;padding:12px 18px;font-size:.84rem;font-weight:500;z-index:999;display:none;box-shadow:0 4px 16px rgba(0,0,0,.2)}
+#toast.err{background:var(--red)}
+#toast.visible{display:block}
+/* ── Dashboard styles ── */
+.dash-wrap { padding: 0; }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  :root {
+    --bg: #F0F2F5;
+    --surface: #FFFFFF;
+    --surface2: #F7F8FA;
+    --border: #E2E6EC;
+    --text: #1A1F2E;
+    --text-muted: #6B7489;
+    --accent: #1B4FBF;
+    --accent-light: #EAF0FD;
+    --green: #117C45;
+    --red: #C0392B;
+    --bar-top: #1B4FBF;
+    --bar-bot: #E05A2B;
+    --radius: 10px;
+    --shadow: 0 1px 4px rgba(0,0,0,0.07), 0 2px 12px rgba(0,0,0,0.04);
+  }
+
+
+ .header-left{ display: flex; align-items: baseline; gap: 12px; flex-wrap: wrap; }
+ header h1{
+    font-size: 1.45rem;
+    font-weight: 700;
+    letter-spacing: -0.3px;
+  }
+ header .subtitle{
+    font-size: 0.85rem;
+    color: var(--text-muted);
+  }
+
+  /* Import button */
+ .import-btn{
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    background: var(--accent);
+    color: #fff;
+    font-family: inherit;
+    font-size: 0.83rem;
+    font-weight: 600;
+    border: none;
+    border-radius: 8px;
+    padding: 9px 18px;
+    cursor: pointer;
+    transition: background 0.15s, opacity 0.15s;
+    white-space: nowrap;
+  }
+ .import-btn:hover{ background: #153ea0; }
+ .import-btn svg{ width: 15px; height: 15px; flex-shrink: 0; }
+ #file-input{ display: none; }
+
+  /* Loading overlay */
+ #loading, #dash-loading{
+    display: none;
+    position: fixed;
+    inset: 0;
+    background: rgba(240,242,245,0.85);
+    z-index: 100;
+    align-items: center;
+    justify-content: center;
+    flex-direction: column;
+    gap: 14px;
+    font-size: 0.9rem;
+    color: var(--text-muted);
+  }
+ #loading.visible{ display: flex; }
+ .spinner{
+    width: 36px; height: 36px;
+    border: 3px solid var(--border);
+    border-top-color: var(--accent);
+    border-radius: 50%;
+    animation: spin 0.7s linear infinite;
+  }
+  @keyframes spin { to { transform: rotate(360deg); } }
+
+  /* Error toast */
+ #toast{
+    display: none;
+    position: fixed;
+    bottom: 24px; right: 24px;
+    background: #C0392B;
+    color: #fff;
+    border-radius: 8px;
+    padding: 12px 18px;
+    font-size: 0.84rem;
+    font-weight: 500;
+    z-index: 200;
+    max-width: 360px;
+    box-shadow: 0 4px 16px rgba(0,0,0,0.2);
+  }
+ #toast.visible{ display: block; }
+
+  /* KPI cards */
+ .kpi-row{
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    gap: 16px;
+    margin-bottom: 24px;
+  }
+ .kpi{
+    background: var(--surface);
+    border-radius: var(--radius);
+    box-shadow: var(--shadow);
+    padding: 20px 22px;
+    border-left: 4px solid var(--accent);
+    text-align: right;
+  }
+ .kpi.green{ border-left-color: var(--green); }
+ .kpi-label{
+    font-size: 0.72rem;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.6px;
+    color: var(--text-muted);
+    margin-bottom: 6px;
+  }
+ .kpi-value{
+    font-size: 1.4rem;
+    font-weight: 700;
+    color: var(--text);
+    line-height: 1;
+  }
+ .kpi-sub{
+    font-size: 0.78rem;
+    color: var(--text-muted);
+    margin-top: 4px;
+  }
+
+  /* Filter bar */
+ .filter-bar{
+    background: var(--surface);
+    border-radius: var(--radius);
+    box-shadow: var(--shadow);
+    padding: 16px 20px;
+    margin-bottom: 24px;
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    flex-wrap: wrap;
+  }
+ .filter-bar label{
+    font-size: 0.82rem;
+    font-weight: 600;
+    color: var(--text-muted);
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    white-space: nowrap;
+  }
+ .filter-bar select{
+    font-family: inherit;
+    font-size: 0.9rem;
+    font-weight: 500;
+    color: var(--text);
+    background: var(--surface2);
+    border: 1.5px solid var(--border);
+    border-radius: 7px;
+    padding: 8px 14px;
+    cursor: pointer;
+    outline: none;
+    min-width: 220px;
+    transition: border-color 0.15s;
+  }
+ .filter-bar select:focus{ border-color: var(--accent); }
+ .supplier-badge{
+    display: inline-flex;
+    align-items: center;
+    background: var(--accent-light);
+    color: var(--accent);
+    font-size: 0.78rem;
+    font-weight: 600;
+    border-radius: 20px;
+    padding: 4px 12px;
+  }
+ .supplier-total{
+    font-size: 0.78rem;
+    color: var(--text-muted);
+    margin-left: auto;
+  }
+ .period-filter{
+    display: flex; align-items: center; gap: 10px;
+    margin-left: 16px; padding-left: 16px;
+    border-left: 1px solid var(--border);
+    flex-wrap: wrap;
+  }
+ .period-filter label{
+    font-size: 0.82rem; font-weight: 600; color: var(--text-muted);
+    text-transform: uppercase; letter-spacing: 0.5px; white-space: nowrap;
+  }
+ .period-filter select{
+    font-family: inherit; font-size: 0.88rem; font-weight: 500;
+    color: var(--text); background: var(--surface2);
+    border: 1.5px solid var(--border); border-radius: 7px;
+    padding: 7px 12px; cursor: pointer; outline: none;
+    transition: border-color 0.15s;
+  }
+ .period-filter select:focus{ border-color: var(--accent); }
+ .period-filter select:disabled{ opacity: 0.45; cursor: not-allowed; background: var(--border); }
+ .period-hint{ font-size: 0.72rem; color: var(--text-muted); font-style: italic; }
+ .period-filter{
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin-left: 16px;
+    padding-left: 16px;
+    border-left: 1px solid var(--border);
+    flex-wrap: wrap;
+  }
+ .period-filter label{
+    font-size: 0.82rem;
+    font-weight: 600;
+    color: var(--text-muted);
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    white-space: nowrap;
+  }
+ .period-filter select{
+    font-family: inherit;
+    font-size: 0.88rem;
+    font-weight: 500;
+    color: var(--text);
+    background: var(--surface2);
+    border: 1.5px solid var(--border);
+    border-radius: 7px;
+    padding: 7px 12px;
+    cursor: pointer;
+    outline: none;
+    transition: border-color 0.15s;
+  }
+ .period-filter select:focus{ border-color: var(--accent); }
+ .period-filter select:disabled{
+    opacity: 0.45;
+    cursor: not-allowed;
+    background: var(--border);
+  }
+ .period-hint{
+    font-size: 0.72rem;
+    color: var(--text-muted);
+    font-style: italic;
+  }
+
+  /* Main grid */
+ .main-grid{
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 20px;
+  }
+  @media (max-width: 900px) {
+ .main-grid{ grid-template-columns: 1fr; }
+  }
+
+ .panel{
+    background: var(--surface);
+    border-radius: var(--radius);
+    box-shadow: var(--shadow);
+    overflow: hidden;
+  }
+ .panel-header{
+    padding: 16px 20px 12px;
+    border-bottom: 1px solid var(--border);
+    display: flex;
+    align-items: center;
+    gap: 10px;
+  }
+ .panel-title{ font-size: 0.88rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.5px; }
+ .panel-title.top{ color: var(--accent); }
+ .panel-title.bottom{ color: var(--red); }
+ .panel-count{
+    font-size: 0.72rem;
+    color: var(--text-muted);
+    background: var(--surface2);
+    border-radius: 20px;
+    padding: 2px 8px;
+    font-weight: 600;
+  }
+
+ .art-table{ width: 100%; border-collapse: collapse; }
+ .art-table tr{ border-bottom: 1px solid var(--border); transition: background 0.1s; }
+ .art-table tr:last-child{ border-bottom: none; }
+ .art-table tr:hover{ background: var(--surface2); }
+ .art-table td{ padding: 11px 20px; vertical-align: top; }
+ .rank{
+    width: 28px;
+    font-size: 0.72rem;
+    font-weight: 700;
+    color: var(--text-muted);
+    padding-right: 8px;
+    white-space: nowrap;
+    vertical-align: middle;
+  }
+ .art-nr{
+    font-size: 0.72rem;
+    font-weight: 700;
+    color: var(--text-muted);
+    margin-bottom: 2px;
+    font-family: 'Consolas', 'Courier New', monospace;
+  }
+ .art-name{ font-size: 0.83rem; color: var(--text); line-height: 1.35; }
+ .bar-wrap{ width: 100%; height: 4px; background: var(--border); border-radius: 2px; margin-top: 6px; }
+ .bar-fill{ height: 4px; border-radius: 2px; min-width: 2px; }
+ .bar-fill.top{ background: var(--bar-top); }
+ .bar-fill.bottom{ background: var(--bar-bot); }
+ .art-umsatz{
+    text-align: right;
+    white-space: nowrap;
+    font-size: 0.9rem;
+    font-weight: 700;
+    color: var(--text);
+    vertical-align: middle;
+    width: 140px;
+    min-width: 140px;
+  }
+
+  /* Supplier bar chart */
+ .chart-panel{
+    background: var(--surface);
+    border-radius: var(--radius);
+    box-shadow: var(--shadow);
+    padding: 20px;
+    margin-bottom: 24px;
+  }
+ .chart-panel h2{
+    font-size: 0.82rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    color: var(--text-muted);
+    margin-bottom: 16px;
+  }
+ .supplier-bars{ display: flex; flex-direction: column; gap: 8px; }
+ .sup-row{
+    display: grid;
+    grid-template-columns: 160px 1fr 130px;
+    align-items: center;
+    gap: 12px;
+    font-size: 0.8rem;
+  }
+ .sup-name{ font-weight: 500; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+ .sup-bar-bg{ height: 8px; background: var(--border); border-radius: 4px; overflow: hidden; }
+ .sup-bar-fill{ height: 8px; border-radius: 4px; background: var(--accent); }
+ .sup-val{ text-align: right; font-weight: 600; color: var(--text-muted); font-size: 0.75rem; white-space: nowrap; width: 130px; min-width: 130px; }
+
+ .no-data{ text-align: center; color: var(--text-muted); padding: 40px 20px; font-size: 0.85rem; }
+
+  /* Analysis sections */
+ .analysis-section{
+    background: var(--surface);
+    border-radius: var(--radius);
+    box-shadow: var(--shadow);
+    margin-top: 24px;
+    overflow: hidden;
+  }
+ .analysis-header{
+    padding: 16px 22px 14px;
+    border-bottom: 1px solid var(--border);
+    display: flex;
+    align-items: baseline;
+    gap: 12px;
+    flex-wrap: wrap;
+  }
+ .analysis-title{
+    font-size: 0.88rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    color: var(--text);
+  }
+ .analysis-subtitle{
+    font-size: 0.78rem;
+    color: var(--text-muted);
+  }
+ .analysis-body{ padding: 20px 22px; }
+
+  /* Concentration / ABC */
+ .conc-grid{
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+    gap: 14px;
+    margin-bottom: 20px;
+  }
+ .conc-card{
+    background: var(--surface2);
+    border-radius: 8px;
+    padding: 14px 16px;
+    text-align: right;
+  }
+ .conc-label{ font-size: 0.7rem; font-weight: 600; text-transform: uppercase; letter-spacing: 0.5px; color: var(--text-muted); margin-bottom: 4px; }
+ .conc-value{ font-size: 1.25rem; font-weight: 700; color: var(--accent); }
+ .conc-sub{ font-size: 0.72rem; color: var(--text-muted); margin-top: 3px; }
+
+  /* Lorenz / concentration bar */
+ .lorenz-bar-wrap{ margin-top: 6px; }
+ .lorenz-row{
+    display: grid;
+    grid-template-columns: 120px 1fr 60px 80px;
+    align-items: center;
+    gap: 10px;
+    font-size: 0.78rem;
+    margin-bottom: 6px;
+  }
+ .lorenz-label{ font-weight: 500; color: var(--text); }
+ .lorenz-bg{ height: 10px; background: var(--border); border-radius: 5px; overflow: hidden; }
+ .lorenz-fill{ height: 10px; border-radius: 5px; }
+ .lorenz-pct{ text-align: right; font-weight: 700; color: var(--text); }
+ .lorenz-amt{ text-align: right; font-size: 0.72rem; color: var(--text-muted); }
+
+  /* ABC table */
+ .abc-table{ width: 100%; border-collapse: collapse; font-size: 0.82rem; }
+ .abc-table th{
+    text-align: left; padding: 8px 12px;
+    font-size: 0.7rem; font-weight: 700; text-transform: uppercase;
+    letter-spacing: 0.4px; color: var(--text-muted);
+    border-bottom: 2px solid var(--border);
+    background: var(--surface2);
+  }
+ .abc-table th:last-child,  .abc-table td:last-child{ text-align: right; }
+ .abc-table td{ padding: 8px 12px; border-bottom: 1px solid var(--border); vertical-align: middle; }
+ .abc-table tr:last-child td{ border-bottom: none; }
+ .abc-table tr:hover td{ background: var(--surface2); }
+ .abc-badge{
+    display: inline-block; font-size: 0.65rem; font-weight: 800;
+    padding: 2px 7px; border-radius: 4px; letter-spacing: 0.5px;
+  }
+ .abc-badge.A{ background: #DBEAFE; color: #1e40af; }
+ .abc-badge.B{ background: #D1FAE5; color: #065F46; }
+ .abc-badge.C{ background: #FEF3C7; color: #92400E; }
+ .abc-badge.slow{ background: #FEE2E2; color: #991B1B; }
+
+  /* Supplier matrix */
+ .matrix-table{ width: 100%; border-collapse: collapse; font-size: 0.82rem; }
+ .matrix-table th{
+    text-align: left; padding: 8px 12px;
+    font-size: 0.7rem; font-weight: 700; text-transform: uppercase;
+    letter-spacing: 0.4px; color: var(--text-muted);
+    border-bottom: 2px solid var(--border);
+    background: var(--surface2);
+  }
+ .matrix-table th:not(:first-child),  .matrix-table td:not(:first-child){ text-align: right; }
+ .matrix-table td{ padding: 8px 12px; border-bottom: 1px solid var(--border); }
+ .matrix-table tr:last-child td{ border-bottom: none; }
+ .matrix-table tr:hover td{ background: var(--surface2); }
+ .matrix-table .total-row td{ font-weight: 700; background: var(--surface2); border-top: 2px solid var(--border); }
+
+  /* Slowmover threshold control */
+ .slow-controls{
+    display: flex; align-items: center; gap: 12px; margin-bottom: 16px; flex-wrap: wrap;
+  }
+ .slow-controls label{ font-size: 0.8rem; font-weight: 600; color: var(--text-muted); }
+ .slow-controls input[type=number]{
+    font-family: inherit; font-size: 0.85rem; font-weight: 500;
+    width: 100px; padding: 6px 10px;
+    border: 1.5px solid var(--border); border-radius: 6px;
+    background: var(--surface2); color: var(--text); outline: none;
+  }
+ .slow-controls input:focus{ border-color: var(--accent); }
+ .slow-count{ font-size: 0.82rem; color: var(--text-muted); }
+ .slow-count strong{ color: var(--red); }
+ .atab{
+  font-family:Arial,sans-serif;font-size:.8rem;font-weight:600;
+  padding:11px 18px;border:none;background:transparent;
+  color:var(--text-muted);cursor:pointer;border-bottom:2px solid transparent;
+  transition:color .15s,border-color .15s;white-space:nowrap;
+}
+.atab:hover{color:var(--text)}
+.atab.active{color:var(--accent);border-bottom-color:var(--accent);background:var(--surface)}
+.atab.time-tab:disabled{opacity:.4;cursor:not-allowed}
+.atab.time-tab:disabled:hover{color:var(--text-muted)}
+ .atab.time-tab:disabled:hover{ color: var(--text-muted); }
+ .month-bar-row{ display:grid; grid-template-columns:55px 1fr 130px 110px; align-items:center; gap:12px; font-size:0.82rem; margin-bottom:8px; }
+ .month-label{ font-weight:600; color:var(--text); }
+ .month-bg{ height:28px; background:var(--border); border-radius:5px; overflow:hidden; position:relative; }
+ .month-fill{ height:28px; border-radius:5px; background:var(--accent); }
+ .month-val{ text-align:right; font-weight:700; color:var(--text); }
+ .month-prov{ text-align:right; font-weight:600; color:#117C45; font-size:0.75rem; }
+ .art-result-row{ padding:8px 12px; border-bottom:1px solid var(--border); cursor:pointer; font-size:0.82rem; transition:background 0.1s; display:flex; gap:12px; align-items:baseline; }
+ .art-result-row:hover{ background:var(--accent-light); }
+ .art-result-row .anr{ font-family:monospace; font-size:0.72rem; color:var(--text-muted); white-space:nowrap; }
+ .art-result-row .aname{ color:var(--text); }
+ .art-result-row .atotal{ margin-left:auto; font-weight:700; color:var(--text); white-space:nowrap; }
+ #art-search-results{ max-height:220px; overflow-y:auto; border:1px solid var(--border); border-radius:8px; background:var(--surface); }
+ .season-cell{ text-align:right; }
+ .season-zero{ color:var(--border); }
+ .season-low{ color:var(--red); font-weight:600; }
+ .season-ok{ color:var(--green); font-weight:600; }
+
+  /* Tabs for analysis sections */
+ .analysis-tabs{
+    display: flex; gap: 0;
+    border-bottom: 1px solid var(--border);
+    background: var(--surface2);
+  }
+ .atab{
+    font-family: inherit; font-size: 0.8rem; font-weight: 600;
+    padding: 11px 18px; border: none; background: transparent;
+    color: var(--text-muted); cursor: pointer; border-bottom: 2px solid transparent;
+    transition: color 0.15s, border-color 0.15s;
+    white-space: nowrap;
+  }
+ .atab:hover{ color: var(--text); }
+ .atab-filter{
+    margin-left: auto;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 4px 12px;
+  }
+ .atab-filter label{
+    font-size: 0.75rem;
+    font-weight: 600;
+    color: var(--text-muted);
+    text-transform: uppercase;
+    letter-spacing: 0.4px;
+    white-space: nowrap;
+  }
+ .atab-filter select{
+    font-family: inherit;
+    font-size: 0.82rem;
+    font-weight: 500;
+    color: var(--text);
+    background: var(--surface);
+    border: 1.5px solid var(--border);
+    border-radius: 6px;
+    padding: 5px 10px;
+    cursor: pointer;
+    outline: none;
+    min-width: 180px;
+    transition: border-color 0.15s;
+  }
+ .atab-filter select:focus{ border-color: var(--accent); }
+ .atab.active{ color: var(--accent); border-bottom-color: var(--accent); background: var(--surface); }
+ .atab-panel{ display: none; padding: 20px 22px; }
+ .atab-panel.active{ display: block; }
+ .art-provision{
+    text-align: right;
+    white-space: nowrap;
+    font-size: 0.82rem;
+    font-weight: 600;
+    color: #117C45;
+    vertical-align: middle;
+    width: 110px;
+    min-width: 110px;
+  }
+
+  /* Analysis sections */
+ .analysis-section{ background: var(--surface); border-radius: var(--radius); box-shadow: var(--shadow); margin-top: 24px; overflow: hidden; }
+ .analysis-tabs{ display: flex; gap: 0; border-bottom: 1px solid var(--border); background: var(--surface2); flex-wrap: wrap; }
+ .atab{ font-family: inherit; font-size: 0.8rem; font-weight: 600; padding: 11px 18px; border: none; background: transparent; color: var(--text-muted); cursor: pointer; border-bottom: 2px solid transparent; transition: color 0.15s, border-color 0.15s; white-space: nowrap; }
+ .atab:hover{ color: var(--text); }
+ .atab-filter{
+    margin-left: auto;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 4px 12px;
+  }
+ .atab-filter label{
+    font-size: 0.75rem;
+    font-weight: 600;
+    color: var(--text-muted);
+    text-transform: uppercase;
+    letter-spacing: 0.4px;
+    white-space: nowrap;
+  }
+ .atab-filter select{
+    font-family: inherit;
+    font-size: 0.82rem;
+    font-weight: 500;
+    color: var(--text);
+    background: var(--surface);
+    border: 1.5px solid var(--border);
+    border-radius: 6px;
+    padding: 5px 10px;
+    cursor: pointer;
+    outline: none;
+    min-width: 180px;
+    transition: border-color 0.15s;
+  }
+ .atab-filter select:focus{ border-color: var(--accent); }
+ .atab.active{ color: var(--accent); border-bottom-color: var(--accent); background: var(--surface); }
+ .atab-panel{ display: none; padding: 20px 22px; }
+ .atab-panel.active{ display: block; }
+ .conc-grid{ display: grid; grid-template-columns: repeat(auto-fit, minmax(160px, 1fr)); gap: 14px; margin-bottom: 20px; }
+ .conc-card{ background: var(--surface2); border-radius: 8px; padding: 14px 16px; text-align: right; }
+ .conc-label{ font-size: 0.7rem; font-weight: 600; text-transform: uppercase; letter-spacing: 0.5px; color: var(--text-muted); margin-bottom: 4px; }
+ .conc-value{ font-size: 1.25rem; font-weight: 700; color: var(--accent); }
+ .conc-sub{ font-size: 0.72rem; color: var(--text-muted); margin-top: 3px; }
+ .lorenz-row{ display: grid; grid-template-columns: 140px 1fr 60px 140px; align-items: center; gap: 10px; font-size: 0.78rem; margin-bottom: 7px; }
+ .lorenz-label{ font-weight: 500; color: var(--text); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+ .lorenz-bg{ height: 10px; background: var(--border); border-radius: 5px; overflow: hidden; }
+ .lorenz-fill{ height: 10px; border-radius: 5px; }
+ .lorenz-pct{ text-align: right; font-weight: 700; color: var(--text); }
+ .lorenz-amt{ text-align: right; font-size: 0.72rem; color: var(--text-muted); }
+ .abc-table,  .matrix-table{ width: 100%; border-collapse: collapse; font-size: 0.82rem; }
+ .abc-table th,  .matrix-table th{ text-align: left; padding: 8px 12px; font-size: 0.7rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.4px; color: var(--text-muted); border-bottom: 2px solid var(--border); background: var(--surface2); }
+ .abc-table td,  .matrix-table td{ padding: 8px 12px; border-bottom: 1px solid var(--border); vertical-align: middle; }
+ .abc-table tr:last-child td,  .matrix-table tr:last-child td{ border-bottom: none; }
+ .abc-table tr:hover td,  .matrix-table tr:hover td{ background: var(--surface2); }
+ .abc-badge{ display: inline-block; font-size: 0.65rem; font-weight: 800; padding: 2px 7px; border-radius: 4px; letter-spacing: 0.5px; }
+ .abc-badge.A{ background: #DBEAFE; color: #1e40af; }
+ .abc-badge.B{ background: #D1FAE5; color: #065F46; }
+ .abc-badge.C{ background: #FEF3C7; color: #92400E; }
+ .matrix-table .total-row td{ font-weight: 700; background: var(--surface2); border-top: 2px solid var(--border); }
+ .slow-controls{ display: flex; align-items: center; gap: 12px; margin-bottom: 16px; flex-wrap: wrap; }
+ .slow-controls label{ font-size: 0.8rem; font-weight: 600; color: var(--text-muted); }
+ .slow-controls input[type=number]{ font-family: inherit; font-size: 0.85rem; font-weight: 500; width: 120px; padding: 6px 10px; border: 1.5px solid var(--border); border-radius: 6px; background: var(--surface2); color: var(--text); outline: none; }
+ .slow-controls input:focus{ border-color: var(--accent); }
+ .slow-count{ font-size: 0.82rem; color: var(--text-muted); }
+ .slow-count strong{ color: var(--red); }
+ .atab{
+  font-family:Arial,sans-serif;font-size:.8rem;font-weight:600;
+  padding:11px 18px;border:none;background:transparent;
+  color:var(--text-muted);cursor:pointer;border-bottom:2px solid transparent;
+  transition:color .15s,border-color .15s;white-space:nowrap;
+}
+.atab:hover{color:var(--text)}
+.atab.active{color:var(--accent);border-bottom-color:var(--accent);background:var(--surface)}
+.atab.time-tab:disabled{opacity:.4;cursor:not-allowed}
+.atab.time-tab:disabled:hover{color:var(--text-muted)}
+ .atab.time-tab:disabled:hover{ color: var(--text-muted); }
+ .month-bar-row{ display:grid; grid-template-columns:55px 1fr 130px 110px; align-items:center; gap:12px; font-size:0.82rem; margin-bottom:8px; }
+ .month-label{ font-weight:600; color:var(--text); }
+ .month-bg{ height:28px; background:var(--border); border-radius:5px; overflow:hidden; position:relative; }
+ .month-fill{ height:28px; border-radius:5px; background:var(--accent); }
+ .month-val{ text-align:right; font-weight:700; color:var(--text); }
+ .month-prov{ text-align:right; font-weight:600; color:#117C45; font-size:0.75rem; }
+ .art-result-row{ padding:8px 12px; border-bottom:1px solid var(--border); cursor:pointer; font-size:0.82rem; transition:background 0.1s; display:flex; gap:12px; align-items:baseline; }
+ .art-result-row:hover{ background:var(--accent-light); }
+ .art-result-row .anr{ font-family:monospace; font-size:0.72rem; color:var(--text-muted); white-space:nowrap; }
+ .art-result-row .aname{ color:var(--text); }
+ .art-result-row .atotal{ margin-left:auto; font-weight:700; color:var(--text); white-space:nowrap; }
+ #art-search-results{ max-height:220px; overflow-y:auto; border:1px solid var(--border); border-radius:8px; background:var(--surface); }
+ .season-cell{ text-align:right; }
+ .season-zero{ color:var(--border); }
+ .season-low{ color:var(--red); font-weight:600; }
+ .season-ok{ color:var(--green); font-weight:600; }
+
+</style>
+</head>
+<body>
+<div id="toast"></div>
+
+<nav class="nav">
+  <div class="nav-logo">
+    <div><div class="logo-bng">bng</div><div class="logo-sub">service GmbH</div></div>
+  </div>
+  <div class="nav-tabs">
+    <button class="nav-tab active" onclick="showPage('abrechnung')" id="tab-abrechnung">Abrechnung</button>
+    <button class="nav-tab" onclick="showPage('verlauf')" id="tab-verlauf">Verlauf</button>
+    <button class="nav-tab" onclick="showPage('dashboard')" id="tab-dashboard">&#128202; Dashboard</button>
+  </div>
+  <div class="nav-right"><span class="nav-badge" id="nav-badge"></span></div>
+</nav>
+
+<!-- ABRECHNUNG -->
+<div class="page active" id="page-abrechnung">
+
+  <!-- Two upload zones -->
+  <div class="upload-grid">
+    <div class="upload-zone" id="uz-hersteller"
+      onclick="document.getElementById('f-hersteller').click()"
+      ondragover="event.preventDefault();this.classList.add('drag')"
+      ondragleave="this.classList.remove('drag')"
+      ondrop="handleDrop(event,'hersteller')">
+      <input type="file" id="f-hersteller" accept=".xlsx,.xls" onchange="loadFile(this,'hersteller')">
+      <div class="upload-icon">&#128203;</div>
+      <div class="upload-label">Datei 1</div>
+      <div class="upload-title" id="uz-h-title">Artikel &amp; Hersteller</div>
+      <div class="upload-sub" id="uz-h-sub">Excel-Export aus JTL-Wawi laden</div>
+    </div>
+    <div class="upload-zone" id="uz-datum"
+      onclick="document.getElementById('f-datum').click()"
+      ondragover="event.preventDefault();this.classList.add('drag')"
+      ondragleave="this.classList.remove('drag')"
+      ondrop="handleDrop(event,'datum')">
+      <input type="file" id="f-datum" accept=".xlsx,.xls" onchange="loadFile(this,'datum')">
+      <div class="upload-icon">&#128197;</div>
+      <div class="upload-label">Datei 2</div>
+      <div class="upload-title" id="uz-d-title">Artikel &amp; Datum</div>
+      <div class="upload-sub" id="uz-d-sub">Excel-Export aus JTL-Wawi laden</div>
+    </div>
+  </div>
+
+  <!-- Period selector -->
+  <div class="period-bar">
+    <label>Abrechnungszeitraum</label>
+    <select class="period-sel" id="period-sel" onchange="buildInvoices()" disabled>
+      <option value="">— Bitte Dateien laden —</option>
+    </select>
+    <span id="period-hint" style="font-size:.78rem;color:var(--muted)"></span>
+  </div>
+
+  <!-- Diff warning -->
+  <div class="diff-warning" id="diff-warning">
+    <strong>&#9888; Abweichung erkannt:</strong> Bei einem oder mehreren Lieferanten weichen die Umsätze aus Hersteller- und Datum-Datei voneinander ab. Betroffene Zeilen sind markiert. Bitte Korrektur prüfen.
+  </div>
+
+  <!-- KPIs -->
+  <div id="kpi-section" style="display:none">
+    <div class="kpi-row">
+      <div class="kpi blue">
+        <div class="kpi-label">Zeitraum</div>
+        <div class="kpi-value" id="kpi-period">—</div>
+        <div class="kpi-sub" id="kpi-period-sub"></div>
+      </div>
+      <div class="kpi">
+        <div class="kpi-label">Gesamtumsatz (Netto)</div>
+        <div class="kpi-value" id="kpi-umsatz">—</div>
+        <div class="kpi-sub">Shop-Umsatz</div>
+      </div>
+      <div class="kpi">
+        <div class="kpi-label">Provision 3% netto</div>
+        <div class="kpi-value" id="kpi-prov">—</div>
+        <div class="kpi-sub" id="kpi-prov-sub">zzgl. 19% MwSt.</div>
+      </div>
+      <div class="kpi red">
+        <div class="kpi-label">Noch offen</div>
+        <div class="kpi-value" id="kpi-open">—</div>
+        <div class="kpi-sub" id="kpi-open-sub"></div>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-header">
+        <span class="card-title">Provisionsabrechnung</span>
+        <div class="filter-bar">
+          <select class="filter-sel" id="filter-status" onchange="renderTable()">
+            <option value="all">Alle</option>
+            <option value="open">Ausstehend</option>
+            <option value="done">Erledigt</option>
+          </select>
+          <button class="btn btn-sm btn-secondary" onclick="markAllDone()">Alle erledigt</button>
+          <button class="btn btn-sm btn-primary" onclick="saveState()">&#128190; Speichern</button>
+        </div>
+      </div>
+      <table class="inv-table">
+        <thead><tr>
+          <th>Lieferant</th>
+          <th>Firma (sevDesk)</th>
+          <th class="r">Umsatz (Referenz)</th>
+          <th class="r">Umsatz Periode</th>
+          <th class="r">Korrektur</th>
+          <th class="r">Provision 3%</th>
+          <th class="r">MwSt. 19%</th>
+          <th class="r">Brutto</th>
+          <th>Status</th>
+          <th></th>
+        </tr></thead>
+        <tbody id="inv-body"></tbody>
+        <tfoot id="inv-foot"></tfoot>
+      </table>
+    </div>
+  </div>
+</div>
+
+<!-- VERLAUF -->
+<div class="page" id="page-verlauf">
+  <div class="card">
+    <div class="card-header"><span class="card-title">Abrechnungsverlauf</span></div>
+    <div id="history-container" style="padding:16px">
+      <p style="color:var(--muted);font-size:.85rem">Noch keine Abrechnungen gespeichert.</p>
+    </div>
+  </div>
+</div>
+
+<!-- DASHBOARD TAB -->
+<div class="page" id="page-dashboard">
+  <div class="dash-wrap">
+<div id="dash-placeholder" style="display:none;background:#fef3c7;border:1px solid #fcd34d;border-radius:8px;padding:16px 20px;margin-bottom:20px;font-size:.88rem;color:#92400e">
+  <strong>&#9432; Noch keine Daten geladen.</strong> Bitte zuerst im Tab <strong>Abrechnung</strong> die Hersteller-Datei und die Datum-Datei hochladen — das Dashboard übernimmt sie automatisch.
+</div>
+
+
+<div id="dash-loading" style="display:none"><div class="spinner"></div><span>Datei wird verarbeitet…</span></div>
+<input type="file" id="dash-file-input" accept=".xlsx,.xls" style="display:none">
+<input type="file" id="dash-time-file-input" accept=".xlsx,.xls" style="display:none">
+
+<header style="margin:16px 0 20px;">
+  <div class="header-left">
+    <h1>bng Artikel-Dashboard</h1>
+    <span class="subtitle">Nettoumsatz · Einkauf Mitgliedspraxen</span>
+  </div>
+  <div style="display:flex;gap:10px;flex-wrap:wrap;align-items:center">
+    <button class="import-btn" onclick="document.getElementById('dash-file-input').click()">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
+        <polyline points="17 8 12 3 7 8"/>
+        <line x1="12" y1="3" x2="12" y2="15"/>
+      </svg>
+      Hersteller-Datei laden
+    </button>
+    <button class="import-btn" id="time-btn" onclick="document.getElementById('dash-time-file-input').click()" style="background:#117C45" title="Datei mit tageweisen Umsätzen laden">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
+        <polyline points="17 8 12 3 7 8"/>
+        <line x1="12" y1="3" x2="12" y2="15"/>
+      </svg>
+      Zeitreihen-Datei laden
+    </button>
+  </div>
+</header>
+
+<div class="kpi-row">
+  <div class="kpi">
+    <div class="kpi-label">Gesamtumsatz (Netto)</div>
+    <div class="kpi-value" id="kpi-total">—</div>
+    <div class="kpi-sub" id="kpi-sub">Alle Lieferanten</div>
+  </div>
+  <div class="kpi green">
+    <div class="kpi-label">Anzahl Artikel</div>
+    <div class="kpi-value" id="kpi-count">—</div>
+    <div class="kpi-sub" id="kpi-count-sub">mit Umsatz</div>
+  </div>
+  <div class="kpi">
+    <div class="kpi-label">Top-Artikel Umsatz</div>
+    <div class="kpi-value" id="kpi-top">—</div>
+    <div class="kpi-sub" id="kpi-top-nr">—</div>
+  </div>
+  <div class="kpi">
+    <div class="kpi-label">Bottom-Artikel Umsatz</div>
+    <div class="kpi-value" id="kpi-bot">—</div>
+    <div class="kpi-sub" id="kpi-bot-nr">—</div>
+  </div>
+  <div class="kpi" style="border-left-color: #117C45;">
+    <div class="kpi-label">bng Provision (3%)</div>
+    <div class="kpi-value" id="kpi-provision">—</div>
+    <div class="kpi-sub" id="kpi-provision-sub">des Nettoumsatzes</div>
+  </div>
+</div>
+
+<div class="filter-bar">
+  <label>Lieferant</label>
+  <select id="supplier-select" onchange="update()"></select>
+  <span class="supplier-badge" id="supplier-badge">Alle Lieferanten</span>
+  <span class="supplier-total" id="supplier-total"></span>
+  <div class="period-filter">
+    <label>Zeitraum</label>
+    <select id="period-select" onchange="onPeriodChange()" disabled>
+      <option value="all">Jan–Jun (gesamt)</option>
+      <option value="Q1">Q1 (Jan–Mär)</option>
+      <option value="Q2">Q2 (Apr–Jun)</option>
+      <option value="2026-01">Januar</option>
+      <option value="2026-02">Februar</option>
+      <option value="2026-03">März</option>
+      <option value="2026-04">April</option>
+      <option value="2026-05">Mai</option>
+      <option value="2026-06">Juni</option>
+    </select>
+    <span class="period-hint" id="period-hint">Zeitreihen-Datei laden</span>
+  </div>
+</div>
+
+<div class="chart-panel" id="chart-panel">
+  <h2>Umsatz je Lieferant (Netto)</h2>
+  <div class="supplier-bars" id="supplier-bars"></div>
+</div>
+
+<div class="main-grid">
+  <div class="panel">
+    <div class="panel-header">
+      <span class="panel-title top">▲ Top 10</span>
+      <span class="panel-count">höchster Umsatz</span>
+    </div>
+    <table class="art-table" id="top-table"></table>
+  </div>
+  <div class="panel">
+    <div class="panel-header">
+      <span class="panel-title bottom">▼ Bottom 10</span>
+      <span class="panel-count">niedrigster Umsatz</span>
+    </div>
+    <table class="art-table" id="bot-table"></table>
+  </div>
+</div>
+
+<!-- ═══ ANALYSIS SECTION ═══════════════════════════════════════════════════ -->
+<div class="analysis-section">
+  <div class="analysis-tabs">
+    <button class="atab active" onclick="switchTab(0)">1 · Klumpenrisiko</button>
+    <button class="atab" onclick="switchTab(1)">2 · Artikelkonzentration</button>
+    <button class="atab" onclick="switchTab(2)">3 · Lieferanten-Matrix</button>
+    <button class="atab" onclick="switchTab(3)">4 · Schwachläufer</button>
+    <button class="atab time-tab" onclick="switchTab(4)" id="tab-btn-4" disabled title="Zeitreihen-Datei laden">5 · Monatsverlauf</button>
+    <span id="time-hint" style="font-size:.72rem;color:rgba(255,255,255,.45);padding:0 8px;align-self:center">← Zeitreihen-Datei laden</span>
+    <button class="atab time-tab" onclick="switchTab(5)" id="tab-btn-5" disabled title="Zeitreihen-Datei laden">6 · Artikel-Zeitverlauf</button>
+    <button class="atab time-tab" onclick="switchTab(6)" id="tab-btn-6" disabled title="Zeitreihen-Datei laden">7 · Saisonalität</button>
+    <div class="atab-filter">
+      <label>Lieferant</label>
+      <select id="analysis-supplier-select" onchange="refreshActiveTab()"></select>
+    </div>
+  </div>
+  <div class="atab-panel active" id="tab-0">
+    <div class="conc-grid" id="conc-kpis"></div>
+    <div id="conc-bars"></div>
+  </div>
+  <div class="atab-panel" id="tab-1">
+    <div class="conc-grid" id="abc-kpis"></div>
+    <table class="abc-table"><thead><tr>
+      <th>#</th><th>Lieferant</th><th>Artikelnummer</th><th>Bezeichnung</th>
+      <th style="text-align:right">Umsatz</th><th style="text-align:right">Kum. %</th><th style="text-align:right">Klasse</th>
+    </tr></thead><tbody id="abc-body"></tbody></table>
+  </div>
+  <div class="atab-panel" id="tab-2">
+    <table class="matrix-table"><thead><tr>
+      <th>Lieferant</th><th style="text-align:right">Artikel</th>
+      <th style="text-align:right">Umsatz (Netto)</th><th style="text-align:right">Ø pro Artikel</th>
+      <th style="text-align:right">Anteil</th><th style="text-align:right">Provision (3%)</th>
+    </tr></thead><tbody id="matrix-body"></tbody>
+    <tfoot><tr class="total-row" id="matrix-total"></tr></tfoot></table>
+  </div>
+  <div class="atab-panel" id="tab-3">
+    <div class="slow-controls">
+      <label>Schwelle (Netto):</label>
+      <input type="number" id="slow-threshold" value="100" min="0" step="10" oninput="renderSlow()">
+      <span class="slow-count" id="slow-count"></span>
+    </div>
+    <table class="abc-table"><thead><tr>
+      <th>Lieferant</th><th>Artikelnummer</th><th>Bezeichnung</th>
+      <th style="text-align:right">Umsatz (Netto)</th><th style="text-align:right">Provision (3%)</th>
+    </tr></thead><tbody id="slow-body"></tbody></table>
+  </div>
+  <!-- Tab 4: Monatsverlauf -->
+  <div class="atab-panel" id="tab-4">
+    <div class="conc-grid" id="month-kpis"></div>
+    <div id="month-chart" style="margin-top:4px"></div>
+  </div>
+
+  <!-- Tab 5: Artikel-Zeitverlauf -->
+  <div class="atab-panel" id="tab-5">
+    <div class="slow-controls" style="margin-bottom:16px">
+      <label>Artikel suchen:</label>
+      <input type="text" id="art-search" placeholder="Artikelnummer oder Name…" oninput="searchArticles()" style="font-family:inherit;font-size:0.85rem;padding:6px 10px;border:1.5px solid var(--border);border-radius:6px;background:var(--surface2);color:var(--text);outline:none;min-width:280px">
+    </div>
+    <div id="art-search-results"></div>
+    <div id="art-chart" style="margin-top:16px"></div>
+  </div>
+
+  <!-- Tab 6: Saisonalität Schwachläufer -->
+  <div class="atab-panel" id="tab-6">
+    <div class="slow-controls">
+      <label>Schwelle (Netto/Monat):</label>
+      <input type="number" id="season-threshold" value="100" min="0" step="10" oninput="renderSeason()">
+      <span class="slow-count" id="season-count"></span>
+    </div>
+    <table class="abc-table" id="season-table">
+      <thead><tr>
+        <th>Lieferant</th><th>Artikelnummer</th><th>Bezeichnung</th>
+        <th style="text-align:right">Jan</th><th style="text-align:right">Feb</th>
+        <th style="text-align:right">Mär</th><th style="text-align:right">Apr</th>
+        <th style="text-align:right">Mai</th><th style="text-align:right">Jun</th>
+        <th style="text-align:right">Gesamt</th><th style="text-align:right">Monate &gt; 0</th>
+      </tr></thead>
+      <tbody id="season-body"></tbody>
+    </table>
+  </div>
+</div>
+
+<script>
+// ── Encoding fix ──────────────────────────────────────────────────────────────
+const CP1252 = {
+  0x80:0x20AC,0x82:0x201A,0x83:0x0192,0x84:0x201E,0x85:0x2026,
+  0x86:0x2020,0x87:0x2021,0x88:0x02C6,0x89:0x2030,0x8A:0x0160,
+  0x8B:0x2039,0x8C:0x0152,0x8E:0x017D,0x91:0x2018,0x92:0x2019,
+  0x93:0x201C,0x94:0x201D,0x95:0x2022,0x96:0x2013,0x97:0x2014,
+  0x98:0x02DC,0x99:0x2122,0x9A:0x0161,0x9B:0x203A,0x9C:0x0153,
+  0x9E:0x017E,0x9F:0x0178
+};
+const U_TO_BYTE = Object.fromEntries(Object.entries(CP1252).map(([b,u])=>[u,+b]));
+
+function fixStr(s) {
+  if (typeof s !== 'string') s = String(s ?? '');
+  // Only fix strings that contain mojibake patterns (U+00C3 followed by cp1252 char)
+  // If string already contains proper unicode (Ü, Ö etc.), leave it alone
+  let hasMojibake = false;
+  const chars = [...s];
+  for (let i = 0; i < chars.length - 1; i++) {
+    const cp = chars[i].codePointAt(0);
+    const cpNext = chars[i+1].codePointAt(0);
+    if (cp === 0xC3 && U_TO_BYTE[cpNext] !== undefined) { hasMojibake = true; break; }
+    if (cp === 0xC3 && cpNext >= 0x80 && cpNext <= 0xBF) { hasMojibake = true; break; }
+  }
+  if (!hasMojibake) return s;
+  const bytes = [];
+  for (const ch of s) {
+    const cp = ch.codePointAt(0);
+    if (cp < 0x80) { bytes.push(cp); }
+    else if (U_TO_BYTE[cp] !== undefined) { bytes.push(U_TO_BYTE[cp]); }
+    else if (cp <= 0xFF) { bytes.push(cp); }
+    else { for (const b of new TextEncoder().encode(ch)) bytes.push(b); }
+  }
+  try {
+    const result = new TextDecoder('utf-8').decode(new Uint8Array(bytes));
+    // Sanity check: result should not contain replacement chars
+    return result.includes('\uFFFD') ? s : result;
+  }
+  catch { return s; }
+}
+
+// ── Excel parser ──────────────────────────────────────────────────────────────
+function parseExcel(arrayBuffer) {
+  const wb = XLSX.read(arrayBuffer, {type:'array'});
+  const ws = wb.Sheets[wb.SheetNames[0]];
+  const rows = XLSX.utils.sheet_to_json(ws, {header:1, defval:0});
+  if (rows.length < 2) throw new Error('Datei hat zu wenige Zeilen.');
+
+  const rawHeaders = rows[0].map(h => fixStr(String(h ?? '')));
+
+  // Detect article column (first), Gesamt column (last numeric), Ø column
+  const artCol = 0;
+  const gesamtIdx = rawHeaders.indexOf('Gesamt');
+  if (gesamtIdx < 0) throw new Error('Spalte "Gesamt" nicht gefunden. Bitte Dateiformat prüfen.');
+
+  // Exclude columns
+  const excludeNames = new Set(['Gesamt', 'Kein Hersteller', 'Wassenburg', 'Ø', 'Ã˜', 'Kein Lieferant']);
+  // Detect avg column (Ø or similar single-char non-supplier cols between data and Gesamt)
+  const supplierCols = [];
+  for (let i = 1; i < gesamtIdx; i++) {
+    const name = rawHeaders[i];
+    if (!excludeNames.has(name) && name.length > 1) {
+      supplierCols.push({name, idx: i});
+    }
+  }
+
+  const dataRows = rows.slice(1).filter(r => {
+    const art = fixStr(String(r[artCol] ?? ''));
+    return art && !art.startsWith('Gesamt');
+  });
+
+  function parseArticle(art) {
+    const s = fixStr(String(art));
+    const sep = s.indexOf(' - (');
+    if (sep < 0) return {nr: s, name: s};
+    const nr = s.slice(0, sep).trim();
+    let name = s.slice(sep + 4);
+    if (name.endsWith(')')) name = name.slice(0,-1);
+    name = name.replace(/\"/g,'"').replace(/\\/g,'').trim().replace(/^"+|"+$/g,'');
+    return {nr, name};
+  }
+
+  function buildRanking(rows) {
+    const sorted = rows.filter(r => r.umsatz > 0).sort((a,b) => b.umsatz - a.umsatz);
+    return {
+      top10: sorted.slice(0, 10),
+      bottom10: [...sorted.slice(-10)].reverse(),
+      all_nrs: sorted.map(r => r.nr)
+    };
+  }
+
+  // Build result structure
+  const result = {};
+  const totals = {};
+  supplierCols.forEach(sc => { totals[sc.name] = 0; });
+
+  // All articles
+  const allRows = [];
+  dataRows.forEach(r => {
+    const umsatz = parseFloat(r[gesamtIdx]) || 0;
+    if (umsatz <= 0) return;
+    const {nr, name} = parseArticle(r[artCol]);
+    allRows.push({nr, name, umsatz: Math.round(umsatz * 100) / 100});
+    // accumulate per supplier
+    supplierCols.forEach(sc => {
+      totals[sc.name] += parseFloat(r[sc.idx]) || 0;
+    });
+  });
+  result['Alle'] = buildRanking(allRows);
+
+  // Round totals
+  supplierCols.forEach(sc => {
+    totals[sc.name] = Math.round(totals[sc.name] * 100) / 100;
+  });
+
+  // Per supplier
+  supplierCols.forEach(sc => {
+    const rows = [];
+    dataRows.forEach(r => {
+      const umsatz = parseFloat(r[sc.idx]) || 0;
+      if (umsatz <= 0) return;
+      const {nr, name} = parseArticle(r[artCol]);
+      rows.push({nr, name, umsatz: Math.round(umsatz * 100) / 100});
+    });
+    result[sc.name] = buildRanking(rows);
+  });
+
+  const grandTotal = Math.round(allRows.reduce((s,r) => s + r.umsatz, 0) * 100) / 100;
+  const artCount = allRows.length;
+
+  return {
+    suppliers: ['Alle', ...supplierCols.map(s => s.name)],
+    data: result,
+    totals,
+    grand_total: grandTotal,
+    art_count: artCount
+  };
+}
+
+// ── State ─────────────────────────────────────────────────────────────────────
+let RAW = {"suppliers":["Alle"],"data":{"Alle":{"top10":[],"bottom10":[],"all_nrs":[]}},"totals":{},"grand_total":0};
+RAW.art_count = 0;
+
+// ── Helpers ───────────────────────────────────────────────────────────────────
+const fmt = n => n.toLocaleString('de-DE', {minimumFractionDigits:2, maximumFractionDigits:2}) + ' €';
+const fmtShort = n => n >= 1000 ? (n/1000).toLocaleString('de-DE',{minimumFractionDigits:1,maximumFractionDigits:1}) + 'k €' : fmt(n);
+
+function showToast(msg, ms=4000) {
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.classList.add('visible');
+  setTimeout(() => t.classList.remove('visible'), ms);
+}
+
+// ── File input ────────────────────────────────────────────────────────────────
+document.getElementById('dash-file-input').addEventListener('change', function(e) {
+  const file = e.target.files[0];
+  if (!file) return;
+  const loading = document.getElementById('dash-loading');
+  loading.classList.add('visible');
+  const reader = new FileReader();
+  reader.onload = function(ev) {
+    try {
+      RAW = parseExcel(ev.target.result);
+      rebuildDropdown();
+      renderSupplierBars();
+      update();
+      switchTab(activeTab);
+    } catch(err) {
+      showToast('Fehler beim Einlesen: ' + err.message);
+    } finally {
+      loading.classList.remove('visible');
+      e.target.value = '';
+    }
+  };
+  reader.onerror = () => {
+    loading.classList.remove('visible');
+    showToast('Datei konnte nicht gelesen werden.');
+  };
+  reader.readAsArrayBuffer(file);
+});
+
+// ── Dropdown ──────────────────────────────────────────────────────────────────
+function rebuildDropdown() {
+  ['supplier-select', 'analysis-supplier-select'].forEach(id => {
+    const sel = document.getElementById(id);
+    if (!sel) return;
+    sel.innerHTML = '';
+    RAW.suppliers.forEach(s => {
+      const opt = document.createElement('option');
+      opt.value = s;
+      opt.textContent = s === 'Alle' ? 'Alle Lieferanten' : s;
+      sel.appendChild(opt);
+    });
+  });
+}
+
+function getAnalysisSupplier() {
+  return document.getElementById('analysis-supplier-select')?.value || 'Alle';
+}
+
+function refreshActiveTab() {
+  if (activeTab===0) renderConcentration();
+  else if (activeTab===1) renderABC();
+  else if (activeTab===2) renderMatrix();
+  else if (activeTab===3) renderSlow();
+  else if (activeTab===4) renderMonthly();
+  else if (activeTab===5) { searchArticles(); }
+  else if (activeTab===6) renderSeason();
+}
+
+// ── Chart ─────────────────────────────────────────────────────────────────────
+function renderSupplierBars() {
+  const container = document.getElementById('supplier-bars');
+  const pairs = Object.entries(RAW.totals).sort((a,b) => b[1]-a[1]);
+  if (!pairs.length) { container.innerHTML = ''; return; }
+  const maxVal = pairs[0][1];
+  container.innerHTML = pairs.map(([name, val]) => `
+    <div class="sup-row">
+      <div class="sup-name" title="${name}">${name}</div>
+      <div class="sup-bar-bg"><div class="sup-bar-fill" style="width:${(val/maxVal*100).toFixed(1)}%"></div></div>
+      <div class="sup-val">${fmt(val)}</div>
+    </div>`).join('');
+}
+
+// ── Tables ────────────────────────────────────────────────────────────────────
+function renderTable(tableId, items, type) {
+  const table = document.getElementById(tableId);
+  if (!items || !items.length) {
+    table.innerHTML = '<tr><td class="no-data">Keine Daten</td></tr>';
+    return;
+  }
+  const maxU = items[0].umsatz;
+  table.innerHTML = items.map((item, i) => `
+    <tr>
+      <td class="rank">${i+1}</td>
+      <td>
+        <div class="art-nr">${item.nr}</div>
+        <div class="art-name">${item.name}</div>
+        <div class="bar-wrap"><div class="bar-fill ${type}" style="width:${(item.umsatz/maxU*100).toFixed(1)}%"></div></div>
+      </td>
+      <td class="art-umsatz">${fmt(item.umsatz)}</td>
+      <td class="art-provision">${fmt(Math.round(item.umsatz * 0.03 * 100) / 100)}</td>
+    </tr>`).join('');
+}
+
+// ── Main update ───────────────────────────────────────────────────────────────
+function update() {
+  const s = document.getElementById('supplier-select').value;
+  const d = RAW.data[s];
+  if (!d) return;
+
+  document.getElementById('supplier-badge').textContent = s === 'Alle' ? 'Alle Lieferanten' : s;
+
+  const months = getActiveMonths();
+  const isFiltered = TIME_DATA && getActivePeriod() !== 'all';
+  let total;
+  if (isFiltered) {
+    const nrs = s === 'Alle' ? getAllNrs('Alle') : getAllNrs(s);
+    total = getFilteredUmsatz(nrs, months) ?? (s === 'Alle' ? RAW.grand_total : (RAW.totals[s] || 0));
+  } else {
+    total = s === 'Alle' ? RAW.grand_total : (RAW.totals[s] || 0);
+  }
+  const artCount = s === 'Alle' ? RAW.art_count : (d.top10.length + d.bottom10.length);
+
+  document.getElementById('kpi-total').textContent = fmt(total);
+  document.getElementById('kpi-sub').textContent = s === 'Alle' ? 'Alle Lieferanten' : s;
+  document.getElementById('kpi-count').textContent = artCount;
+  document.getElementById('kpi-count-sub').textContent = 'Artikel mit Umsatz';
+
+  const top = d.top10[0], bot = d.bottom10[0];
+  document.getElementById('kpi-top').textContent = top ? fmt(top.umsatz) : '—';
+  document.getElementById('kpi-top-nr').textContent = top ? top.nr : '—';
+  document.getElementById('kpi-bot').textContent = bot ? fmt(bot.umsatz) : '—';
+  document.getElementById('kpi-bot-nr').textContent = bot ? bot.nr : '—';
+
+  const provision = Math.round(total * 0.03 * 100) / 100;
+  document.getElementById('kpi-provision').textContent = fmt(provision);
+  document.getElementById('kpi-provision-sub').textContent = '3% von ' + fmt(total);
+
+  document.getElementById('chart-panel').style.display = s === 'Alle' ? 'block' : 'none';
+  document.getElementById('supplier-total').textContent =
+    s !== 'Alle' ? 'Lieferantenumsatz gesamt: ' + fmt(total) : '';
+
+  renderTable('top-table', d.top10, 'top');
+  renderTable('bot-table', d.bottom10, 'bottom');
+}
+
+// ── Tab switcher ──────────────────────────────────────────────────────────────
+let activeTab = 0;
+function switchTab(n) {
+  document.querySelectorAll('.atab').forEach((b,i) => b.classList.toggle('active', i===n));
+  document.querySelectorAll('.atab-panel').forEach((p,i) => p.classList.toggle('active', i===n));
+  activeTab = n;
+  refreshActiveTab();
+}
+
+// ── 1. Klumpenrisiko ──────────────────────────────────────────────────────────
+function renderConcentration() {
+  const sup = getAnalysisSupplier();
+  const months = getActiveMonths();
+  const isFiltered = TIME_DATA && getActivePeriod() !== 'all';
+  let pairs, total;
+  if (sup === 'Alle') {
+    if (isFiltered) {
+      const rawPairs = Object.keys(RAW.totals).filter(s => RAW.totals[s] > 0);
+      pairs = rawPairs.map(s => [s, getFilteredUmsatz(getAllNrs(s), months) || 0])
+                      .filter(([,v]) => v > 0).sort((a,b) => b[1]-a[1]);
+      total = pairs.reduce((s,[,v])=>s+v, 0);
+    } else {
+      pairs = Object.entries(RAW.totals).filter(([,v])=>v>0).sort((a,b)=>b[1]-a[1]);
+      total = RAW.grand_total;
+    }
+  } else {
+    const val = isFiltered ? (getFilteredUmsatz(getAllNrs(sup), months) || 0) : (RAW.totals[sup]||0);
+    pairs = [[sup, val]];
+    total = val;
+  }
+  const top1pct = pairs.slice(0,1).reduce((s,[,v])=>s+v,0)/total*100;
+  const top3pct = pairs.slice(0,3).reduce((s,[,v])=>s+v,0)/total*100;
+  const top5pct = pairs.slice(0,5).reduce((s,[,v])=>s+v,0)/total*100;
+
+  document.getElementById('conc-kpis').innerHTML = `
+    <div class="conc-card">
+      <div class="conc-label">Top-1-Lieferant</div>
+      <div class="conc-value">${top1pct.toFixed(1)}%</div>
+      <div class="conc-sub">${pairs[0]?.[0] ?? '—'}</div>
+    </div>
+    <div class="conc-card">
+      <div class="conc-label">Top-3-Lieferanten</div>
+      <div class="conc-value">${top3pct.toFixed(1)}%</div>
+      <div class="conc-sub">des Gesamtumsatzes</div>
+    </div>
+    <div class="conc-card">
+      <div class="conc-label">Top-5-Lieferanten</div>
+      <div class="conc-value">${top5pct.toFixed(1)}%</div>
+      <div class="conc-sub">des Gesamtumsatzes</div>
+    </div>
+    <div class="conc-card">
+      <div class="conc-label">Aktive Lieferanten</div>
+      <div class="conc-value">${pairs.length}</div>
+      <div class="conc-sub">mit Umsatz > 0</div>
+    </div>`;
+
+  const maxVal = pairs[0]?.[1] ?? 1;
+  const COLORS = ['#1B4FBF','#2563EB','#3B82F6','#60A5FA','#93C5FD','#BFDBFE','#DBEAFE','#E0E7FF','#C7D2FE','#A5B4FC','#818CF8','#6366F1','#4F46E5','#4338CA','#3730A3','#312E81','#1e1b4b'];
+  const headerRow = `<div class="lorenz-row" style="margin-bottom:10px;border-bottom:2px solid var(--border);padding-bottom:6px">
+    <div style="font-size:0.7rem;font-weight:700;text-transform:uppercase;letter-spacing:0.4px;color:var(--text-muted)">Lieferant</div>
+    <div style="font-size:0.7rem;font-weight:700;text-transform:uppercase;letter-spacing:0.4px;color:var(--text-muted)">Anteil</div>
+    <div style="font-size:0.7rem;font-weight:700;text-transform:uppercase;letter-spacing:0.4px;color:var(--text-muted);text-align:right">%</div>
+    <div style="font-size:0.7rem;font-weight:700;text-transform:uppercase;letter-spacing:0.4px;color:var(--text-muted);text-align:right">Umsatz (Netto)</div>
+  </div>`;
+  document.getElementById('conc-bars').innerHTML = headerRow + pairs.map(([name,val],i) => `
+    <div class="lorenz-row">
+      <div class="lorenz-label" title="${name}">${name}</div>
+      <div class="lorenz-bg"><div class="lorenz-fill" style="width:${(val/maxVal*100).toFixed(1)}%;background:${COLORS[i]||'#94a3b8'}"></div></div>
+      <div class="lorenz-pct">${(val/total*100).toFixed(1)}%</div>
+      <div class="lorenz-amt">${fmt(val)}</div>
+    </div>`).join('');
+}
+
+// ── 2. ABC Artikelkonzentration ───────────────────────────────────────────────
+function renderABC() {
+  const sup = getAnalysisSupplier();
+  const artMap = {};
+  const suppliersToScan = sup === 'Alle'
+    ? Object.keys(RAW.data).filter(s => s !== 'Alle')
+    : [sup];
+  suppliersToScan.forEach(s => {
+    const d = RAW.data[s];
+    if (!d) return;
+    [...d.top10, ...d.bottom10].forEach(item => {
+      if (!artMap[item.nr] || artMap[item.nr].umsatz < item.umsatz)
+        artMap[item.nr] = {...item, supplier: s};
+    });
+  });
+  if (sup === 'Alle') {
+    [...RAW.data['Alle'].top10, ...RAW.data['Alle'].bottom10].forEach(item => {
+      if (!artMap[item.nr]) artMap[item.nr] = {...item, supplier: '—'};
+    });
+  }
+
+  // Apply period filter to umsatz values
+  const months = getActiveMonths();
+  const isFiltered = TIME_DATA && getActivePeriod() !== 'all';
+  let items = Object.values(artMap);
+  if (isFiltered) {
+    items = items.map(item => {
+      const art = TIME_DATA.articles[item.nr];
+      if (!art) return {...item, umsatz: 0};
+      const umsatz = months.reduce((s,m) => s + (art.monthly[m]||0), 0);
+      return {...item, umsatz: Math.round(umsatz*100)/100};
+    });
+  }
+  items = items.filter(i=>i.umsatz>0).sort((a,b) => b.umsatz - a.umsatz);
+  const total = isFiltered
+    ? items.reduce((s,i)=>s+i.umsatz, 0)
+    : (sup === 'Alle' ? RAW.grand_total : (RAW.totals[sup] || 0));
+  let cumSum = 0;
+  let countA = 0, countB = 0, countC = 0;
+  let sumA = 0, sumB = 0, sumC = 0;
+
+  const rows = items.map((item, i) => {
+    cumSum += item.umsatz;
+    const cumPct = cumSum / total * 100;
+    let cls = cumPct <= 80 ? 'A' : cumPct <= 95 ? 'B' : 'C';
+    if (cls==='A') { countA++; sumA+=item.umsatz; }
+    else if (cls==='B') { countB++; sumB+=item.umsatz; }
+    else { countC++; sumC+=item.umsatz; }
+    return {item, cumPct, cls};
+  });
+
+  document.getElementById('abc-kpis').innerHTML = `
+    <div class="conc-card">
+      <div class="conc-label">A-Artikel (0–80%)</div>
+      <div class="conc-value">${countA}</div>
+      <div class="conc-sub">${fmt(sumA)}</div>
+    </div>
+    <div class="conc-card">
+      <div class="conc-label">B-Artikel (80–95%)</div>
+      <div class="conc-value">${countB}</div>
+      <div class="conc-sub">${fmt(sumB)}</div>
+    </div>
+    <div class="conc-card">
+      <div class="conc-label">C-Artikel (95–100%)</div>
+      <div class="conc-value">${countC}</div>
+      <div class="conc-sub">${fmt(sumC)}</div>
+    </div>
+    <div class="conc-card">
+      <div class="conc-label">Gesamt Artikel</div>
+      <div class="conc-value">${items.length}</div>
+      <div class="conc-sub">analysiert</div>
+    </div>`;
+
+  document.getElementById('abc-body').innerHTML = rows.map(({item, cumPct, cls}, i) => `
+    <tr>
+      <td>${i+1}</td>
+      <td style="font-size:0.75rem;color:var(--text-muted)">${item.supplier||'—'}</td>
+      <td style="font-family:monospace;font-size:0.72rem;color:var(--text-muted)">${item.nr}</td>
+      <td>${item.name}</td>
+      <td style="text-align:right;font-weight:700">${fmt(item.umsatz)}</td>
+      <td style="text-align:right;color:var(--text-muted)">${cumPct.toFixed(1)}%</td>
+      <td style="text-align:right"><span class="abc-badge ${cls}">${cls}</span></td>
+    </tr>`).join('');
+}
+
+// ── 3. Lieferanten-Matrix ─────────────────────────────────────────────────────
+function renderMatrix() {
+  const sup = getAnalysisSupplier();
+  const months = getActiveMonths();
+  const isFiltered = TIME_DATA && getActivePeriod() !== 'all';
+  let pairs, total;
+  if (sup === 'Alle') {
+    if (isFiltered) {
+      pairs = Object.keys(RAW.totals).filter(s=>RAW.totals[s]>0)
+        .map(s => [s, getFilteredUmsatz(getAllNrs(s), months)||0])
+        .filter(([,v])=>v>0).sort((a,b)=>b[1]-a[1]);
+      total = pairs.reduce((s,[,v])=>s+v,0);
+    } else {
+      pairs = Object.entries(RAW.totals).filter(([,v])=>v>0).sort((a,b)=>b[1]-a[1]);
+      total = RAW.grand_total;
+    }
+  } else {
+    const val = isFiltered ? (getFilteredUmsatz(getAllNrs(sup), months)||0) : (RAW.totals[sup]||0);
+    pairs = [[sup, val]].filter(([,v])=>v>0);
+    total = val;
+  }
+
+  // Article counts from data
+  const artCounts = {};
+  pairs.forEach(([sup]) => {
+    const d = RAW.data[sup];
+    if (!d) { artCounts[sup] = 0; return; }
+    const seen = new Set();
+    [...d.top10, ...d.bottom10].forEach(i => seen.add(i.nr));
+    artCounts[sup] = seen.size;
+  });
+
+  let totalArts = 0;
+  pairs.forEach(([s]) => totalArts += artCounts[s]);
+
+  document.getElementById('matrix-body').innerHTML = pairs.map(([name, val]) => {
+    const cnt = artCounts[name] || 0;
+    const avg = cnt ? val / cnt : 0;
+    const pct = (val / total * 100).toFixed(1);
+    const prov = Math.round(val * 0.03 * 100) / 100;
+    return `<tr>
+      <td style="font-weight:500">${name}</td>
+      <td>${cnt}</td>
+      <td>${fmt(val)}</td>
+      <td>${avg ? fmt(avg) : '—'}</td>
+      <td>${pct}%</td>
+      <td style="color:#117C45;font-weight:600">${fmt(prov)}</td>
+    </tr>`;
+  }).join('');
+
+  document.getElementById('matrix-total').innerHTML = `
+    <td>Gesamt</td>
+    <td style="text-align:right">${totalArts}</td>
+    <td style="text-align:right">${fmt(total)}</td>
+    <td style="text-align:right">—</td>
+    <td style="text-align:right">100%</td>
+    <td style="text-align:right;color:#117C45">${fmt(Math.round(total*0.03*100)/100)}</td>`;
+}
+
+// ── 4. Schwachläufer ──────────────────────────────────────────────────────────
+function renderSlow() {
+  const threshold = parseFloat(document.getElementById('slow-threshold').value) || 100;
+  const sup = getAnalysisSupplier();
+
+  const artMap = {};
+  const suppliersToScan = sup === 'Alle'
+    ? Object.keys(RAW.data).filter(s => s !== 'Alle')
+    : [sup];
+  suppliersToScan.forEach(s => {
+    const d = RAW.data[s];
+    if (!d) return;
+    [...d.top10, ...d.bottom10].forEach(item => {
+      if (!artMap[item.nr]) artMap[item.nr] = {...item, supplier: s};
+    });
+  });
+
+  const months = getActiveMonths();
+  const isFiltered = TIME_DATA && getActivePeriod() !== 'all';
+  let slowItems = Object.values(artMap);
+  if (isFiltered) {
+    slowItems = slowItems.map(item => {
+      const art = TIME_DATA.articles[item.nr];
+      if (!art) return {...item, umsatz: 0};
+      const umsatz = months.reduce((s,m) => s + (art.monthly[m]||0), 0);
+      return {...item, umsatz: Math.round(umsatz*100)/100};
+    });
+  }
+  const slow = slowItems
+    .filter(item => item.umsatz < threshold && item.umsatz > 0)
+    .sort((a,b) => a.umsatz - b.umsatz);
+
+  document.getElementById('slow-count').innerHTML =
+    `<strong>${slow.length} Artikel</strong> unter ${fmt(threshold)} Nettoumsatz`;
+
+  document.getElementById('slow-body').innerHTML = slow.length === 0
+    ? '<tr><td colspan="5" class="no-data">Keine Artikel unter dieser Schwelle</td></tr>'
+    : slow.map(item => `
+      <tr>
+        <td style="font-size:0.75rem;color:var(--text-muted)">${item.supplier}</td>
+        <td style="font-family:monospace;font-size:0.72rem;color:var(--text-muted)">${item.nr}</td>
+        <td>${item.name}</td>
+        <td style="text-align:right;font-weight:700;color:var(--red)">${fmt(item.umsatz)}</td>
+        <td style="text-align:right;color:#117C45;font-weight:600">${fmt(Math.round(item.umsatz*0.03*100)/100)}</td>
+      </tr>`).join('');
+}
+
+// ── Period filter ─────────────────────────────────────────────────────────────
+const PERIOD_MONTHS = {
+  'all':  ['2026-01','2026-02','2026-03','2026-04','2026-05','2026-06'],
+  'Q1':   ['2026-01','2026-02','2026-03'],
+  'Q2':   ['2026-04','2026-05','2026-06'],
+  '2026-01': ['2026-01'], '2026-02': ['2026-02'], '2026-03': ['2026-03'],
+  '2026-04': ['2026-04'], '2026-05': ['2026-05'], '2026-06': ['2026-06']
+};
+
+function getActivePeriod() {
+  return document.getElementById('period-select')?.value || 'all';
+}
+
+function getActiveMonths() {
+  return PERIOD_MONTHS[getActivePeriod()] || PERIOD_MONTHS['all'];
+}
+
+function onPeriodChange() {
+  update();
+  refreshActiveTab();
+}
+
+function enablePeriodFilter() {
+  const sel = document.getElementById('period-select');
+  const hint = document.getElementById('period-hint');
+  if (sel) sel.disabled = false;
+  if (hint) hint.textContent = '';
+}
+
+// Compute filtered umsatz for a supplier using TIME_DATA and active period
+function getFilteredUmsatz(supNrs, months) {
+  if (!TIME_DATA) return null;
+  let total = 0;
+  supNrs.forEach(nr => {
+    const art = TIME_DATA.articles[nr];
+    if (!art) return;
+    months.forEach(m => { total += art.monthly[m] || 0; });
+  });
+  return Math.round(total * 100) / 100;
+}
+
+function getAllNrs(sup) {
+  const d = RAW.data[sup];
+  if (!d) return [];
+  return d.all_nrs || [...(d.top10||[]).map(i=>i.nr), ...(d.bottom10||[]).map(i=>i.nr)];
+}
+
+// ── Time data global ──────────────────────────────────────────────────────────
+let TIME_DATA = null;
+const MONTH_LABELS = {'2026-01':'Jan','2026-02':'Feb','2026-03':'Mär','2026-04':'Apr','2026-05':'Mai','2026-06':'Jun'};
+
+// ── Time file parser ──────────────────────────────────────────────────────────
+function parseTimeExcel(arrayBuffer) {
+  // Read with raw:true to get Excel serial numbers for date headers
+  const wb = XLSX.read(arrayBuffer, {type:'array', cellDates:true});
+  const ws = wb.Sheets[wb.SheetNames[0]];
+
+  // Use sheet_to_json with raw:true so date cells come as JS Date objects
+  const rows = XLSX.utils.sheet_to_json(ws, {header:1, defval:0, raw:true});
+  if (rows.length < 2) throw new Error('Datei hat zu wenige Zeilen.');
+
+  const headerRow = rows[0];
+  const dateCols = [];
+
+  for (let i = 1; i < headerRow.length - 2; i++) {
+    const h = headerRow[i];
+    let month = null;
+
+    if (h instanceof Date && !isNaN(h)) {
+      // cellDates:true gives real JS Date objects
+      const y = h.getFullYear();
+      const m = String(h.getMonth() + 1).padStart(2, '0');
+      month = y + '-' + m;
+    } else if (typeof h === 'number' && h > 40000) {
+      // Excel serial number fallback (days since 1899-12-30)
+      const d = new Date(Math.round((h - 25569) * 86400 * 1000));
+      const y = d.getUTCFullYear();
+      const m = String(d.getUTCMonth() + 1).padStart(2, '0');
+      month = y + '-' + m;
+    } else if (typeof h === 'string') {
+      // Try various string formats: "1/1/2026", "2026-01-01", "01.01.2026"
+      let d = null;
+      if (h.match(/^\d{4}-\d{2}-\d{2}/)) d = new Date(h);
+      else if (h.match(/^\d{1,2}\/\d{1,2}\/\d{4}/)) {
+        const [mo, dy, yr] = h.split('/');
+        d = new Date(yr, mo-1, dy);
+      } else if (h.match(/^\d{1,2}\.\d{1,2}\.\d{4}/)) {
+        const [dy, mo, yr] = h.split('.');
+        d = new Date(yr, mo-1, dy);
+      }
+      if (d && !isNaN(d)) {
+        const y = d.getFullYear();
+        const m = String(d.getMonth() + 1).padStart(2, '0');
+        month = y + '-' + m;
+      }
+    }
+
+    if (month) dateCols.push({idx: i, month});
+  }
+
+  if (dateCols.length === 0) throw new Error('Keine Datumsspalten erkannt. Bitte Dateiformat prüfen.');
+
+  const monthlyTotals = {};
+  const articleMonthly = {};
+
+  for (let r = 1; r < rows.length; r++) {
+    const row = rows[r];
+    const artRaw = fixStr(String(row[0] ?? ''));
+    if (!artRaw || artRaw.startsWith('Gesamt')) continue;
+    const parts = artRaw.split(' - (');
+    const nr = parts[0].trim();
+    const name = parts[1] ? parts[1].replace(/\)$/, '').replace(/^"+|"+$/g,'').trim() : nr;
+
+    const monthly = {};
+    for (const {idx, month} of dateCols) {
+      const v = parseFloat(row[idx]) || 0;
+      if (v) {
+        monthly[month] = Math.round(((monthly[month]||0) + v) * 100) / 100;
+        monthlyTotals[month] = Math.round(((monthlyTotals[month]||0) + v) * 100) / 100;
+      }
+    }
+    const total = Object.values(monthly).reduce((s,v)=>s+v, 0);
+    if (total > 0) articleMonthly[nr] = {name, monthly, total: Math.round(total*100)/100};
+  }
+
+  if (Object.keys(monthlyTotals).length === 0) throw new Error('Keine Umsatzdaten erkannt. Bitte Dateiformat prüfen.');
+
+  return {monthly_totals: monthlyTotals, articles: articleMonthly};
+}
+
+// ── Time file input handler ───────────────────────────────────────────────────
+document.getElementById('dash-time-file-input').addEventListener('change', function(e) {
+  const file = e.target.files[0];
+  if (!file) return;
+  const loading = document.getElementById('dash-loading');
+  loading.classList.add('visible');
+  const reader = new FileReader();
+  reader.onload = function(ev) {
+    try {
+      TIME_DATA = parseTimeExcel(ev.target.result);
+      // Enable time tabs
+      [4,5,6].forEach(i => {
+        const btn = document.getElementById('tab-btn-' + i);
+        if (btn) { btn.disabled = false; btn.title = ''; }
+      });
+      document.getElementById('time-btn').style.background = '#0a5c33';
+      const hint = document.getElementById('time-hint');
+      if (hint) hint.style.display = 'none';
+      enablePeriodFilter();
+      showToast('Zeitreihen-Datei geladen ✓', 2500);
+      if (activeTab >= 4) switchTab(activeTab);
+    } catch(err) {
+      showToast('Fehler beim Einlesen: ' + err.message);
+    } finally {
+      loading.classList.remove('visible');
+      e.target.value = '';
+    }
+  };
+  reader.onerror = () => { loading.classList.remove('visible'); showToast('Datei konnte nicht gelesen werden.'); };
+  reader.readAsArrayBuffer(file);
+});
+
+// ── Tab 5: Monatsverlauf ──────────────────────────────────────────────────────
+function renderMonthly() {
+  if (!TIME_DATA) return;
+  const sup = getAnalysisSupplier();
+  let totals;
+
+  if (sup === 'Alle') {
+    totals = TIME_DATA.monthly_totals;
+  } else {
+    // Build article-to-supplier map from RAW for ALL articles (not just top/bottom 10)
+    // Then sum TIME_DATA monthly values for articles belonging to this supplier
+    totals = {};
+    // Use all_nrs for complete article list per supplier (not just top/bottom 10)
+    const supNrSet = new Set(RAW.data[sup]?.all_nrs || [
+      ...(RAW.data[sup]?.top10 || []).map(i=>i.nr),
+      ...(RAW.data[sup]?.bottom10 || []).map(i=>i.nr)
+    ]);
+    Object.entries(TIME_DATA.articles).forEach(([nr, art]) => {
+      if (!supNrSet.has(nr)) return;
+      Object.entries(art.monthly).forEach(([m,v]) => {
+        totals[m] = Math.round(((totals[m]||0) + v) * 100) / 100;
+      });
+    });
+  }
+
+  // For monthly view, always show all months but highlight active period
+  const activePeriod = getActivePeriod();
+  const activeMonths = getActiveMonths();
+  const months = Object.keys(totals).sort();
+  const maxVal = Math.max(...Object.values(totals), 1);
+  const grandTotal = Object.values(totals).reduce((s,v)=>s+v,0);
+  const bestMonth = months.reduce((a,b) => totals[a]>=totals[b]?a:b, months[0]);
+  const worstMonth = months.reduce((a,b) => totals[a]<=totals[b]?a:b, months[0]);
+
+  document.getElementById('month-kpis').innerHTML = `
+    <div class="conc-card"><div class="conc-label">Gesamtumsatz Jan–Jun</div><div class="conc-value" style="font-size:1.1rem">${fmt(grandTotal)}</div><div class="conc-sub">Netto</div></div>
+    <div class="conc-card"><div class="conc-label">Stärkster Monat</div><div class="conc-value" style="font-size:1.1rem">${fmt(totals[bestMonth]||0)}</div><div class="conc-sub">${MONTH_LABELS[bestMonth]||bestMonth}</div></div>
+    <div class="conc-card"><div class="conc-label">Schwächster Monat</div><div class="conc-value" style="font-size:1.1rem">${fmt(totals[worstMonth]||0)}</div><div class="conc-sub">${MONTH_LABELS[worstMonth]||worstMonth}</div></div>
+    <div class="conc-card"><div class="conc-label">Provision (3%) gesamt</div><div class="conc-value" style="font-size:1.1rem;color:#117C45">${fmt(Math.round(grandTotal*0.03*100)/100)}</div><div class="conc-sub">Jan–Jun</div></div>`;
+
+  document.getElementById('month-chart').innerHTML = months.map(m => {
+    const v = totals[m]||0;
+    const pct = (v/maxVal*100).toFixed(1);
+    const prov = Math.round(v*0.03*100)/100;
+    const isActive = activePeriod === 'all' || activeMonths.includes(m);
+    return `<div class="month-bar-row" style="opacity:${isActive?1:0.3}">
+      <div class="month-label" style="font-weight:${isActive?700:400}">${MONTH_LABELS[m]||m}</div>
+      <div class="month-bg"><div class="month-fill" style="width:${pct}%;background:${isActive?'var(--accent)':'var(--text-muted)'}"></div></div>
+      <div class="month-val">${fmt(v)}</div>
+      <div class="month-prov">${v>0&&isActive?fmt(prov):''}</div>
+    </div>`;
+  }).join('');
+}
+
+// ── Tab 6: Artikel-Zeitverlauf ────────────────────────────────────────────────
+let selectedArtNr = null;
+
+function searchArticles() {
+  if (!TIME_DATA) return;
+  const q = document.getElementById('art-search').value.trim().toLowerCase();
+  const resultsDiv = document.getElementById('art-search-results');
+  if (!q || q.length < 2) { resultsDiv.innerHTML = ''; return; }
+
+  const matches = Object.entries(TIME_DATA.articles)
+    .filter(([nr, d]) => nr.toLowerCase().includes(q) || d.name.toLowerCase().includes(q))
+    .sort((a,b) => b[1].total - a[1].total)
+    .slice(0, 20);
+
+  if (!matches.length) { resultsDiv.innerHTML = '<div style="padding:12px 16px;color:var(--text-muted);font-size:0.82rem">Keine Artikel gefunden</div>'; return; }
+
+  resultsDiv.innerHTML = matches.map(([nr, d]) => `
+    <div class="art-result-row" onclick="selectArticle('${nr.replace(/'/g,"\'")}')">
+      <span class="anr">${nr}</span>
+      <span class="aname">${d.name}</span>
+      <span class="atotal">${fmt(d.total)}</span>
+    </div>`).join('');
+}
+
+function selectArticle(nr) {
+  selectedArtNr = nr;
+  const art = TIME_DATA.articles[nr];
+  if (!art) return;
+  document.getElementById('art-search').value = nr + ' – ' + art.name;
+  document.getElementById('art-search-results').innerHTML = '';
+
+  const months = Object.keys(TIME_DATA.monthly_totals).sort();
+  const maxVal = Math.max(...months.map(m => art.monthly[m]||0), 1);
+  const total = art.total;
+
+  document.getElementById('art-chart').innerHTML = `
+    <div style="margin-bottom:12px">
+      <span style="font-size:0.72rem;font-family:monospace;color:var(--text-muted)">${nr}</span>
+      <span style="font-size:0.88rem;font-weight:600;color:var(--text);margin-left:8px">${art.name}</span>
+      <span style="float:right;font-size:0.88rem;font-weight:700">${fmt(total)}</span>
+    </div>
+    ${months.map(m => {
+      const v = art.monthly[m]||0;
+      const pct = (v/maxVal*100).toFixed(1);
+      const prov = Math.round(v*0.03*100)/100;
+      return `<div class="month-bar-row">
+        <div class="month-label">${MONTH_LABELS[m]||m}</div>
+        <div class="month-bg"><div class="month-fill" style="width:${pct}%;background:${v>0?'var(--accent)':'var(--border)'}"></div></div>
+        <div class="month-val">${v > 0 ? fmt(v) : '<span style="color:var(--text-muted)">—</span>'}</div>
+        <div class="month-prov">${v > 0 ? fmt(prov) : ''}</div>
+      </div>`;
+    }).join('')}`;
+}
+
+// ── Tab 7: Saisonalität Schwachläufer ─────────────────────────────────────────
+function renderSeason() {
+  if (!TIME_DATA) return;
+  const threshold = parseFloat(document.getElementById('season-threshold').value) || 100;
+  const sup = getAnalysisSupplier();
+  const months = Object.keys(TIME_DATA.monthly_totals).sort();
+
+  // Build article list with supplier info from RAW
+  // Use all_nrs for complete supplier->article mapping
+  const artSupplier = {};
+  Object.entries(RAW.data).forEach(([s, d]) => {
+    if (s === 'Alle') return;
+    const nrs = d.all_nrs || [...d.top10, ...d.bottom10].map(i=>i.nr);
+    nrs.forEach(nr => { if (!artSupplier[nr]) artSupplier[nr] = s; });
+  });
+
+  // Filter articles: slow in at least one month, all months avg < threshold
+  const rows = [];
+  Object.entries(TIME_DATA.articles).forEach(([nr, art]) => {
+    const artSup = artSupplier[nr] || '—';
+    if (sup !== 'Alle' && artSup !== sup) return;
+    const monthVals = months.map(m => art.monthly[m]||0);
+    const avgMonthly = art.total / months.length;
+    if (avgMonthly >= threshold) return; // only show slow movers
+    const activeMonths = monthVals.filter(v=>v>0).length;
+    rows.push({nr, name: art.name, supplier: artSup, monthVals, total: art.total, activeMonths});
+  });
+
+  rows.sort((a,b) => a.total - b.total);
+  document.getElementById('season-count').innerHTML = `<strong>${rows.length} Artikel</strong> mit Ø unter ${fmt(threshold)}/Monat`;
+
+  document.getElementById('season-body').innerHTML = rows.length === 0
+    ? '<tr><td colspan="11" class="no-data">Keine Artikel unter dieser Schwelle</td></tr>'
+    : rows.map(r => `<tr>
+        <td style="font-size:0.75rem;color:var(--text-muted)">${r.supplier}</td>
+        <td style="font-family:monospace;font-size:0.72rem;color:var(--text-muted)">${r.nr}</td>
+        <td style="font-size:0.82rem">${r.name}</td>
+        ${r.monthVals.map(v => `<td class="season-cell ${v===0?'season-zero':v<threshold?'season-low':'season-ok'}">${v>0?fmt(v):'–'}</td>`).join('')}
+        <td style="text-align:right;font-weight:700">${fmt(r.total)}</td>
+        <td style="text-align:right;color:var(--text-muted)">${r.activeMonths}/6</td>
+      </tr>`).join('');
+}
+
+// ── Init ──────────────────────────────────────────────────────────────────────
+// Deferred — called when Dashboard tab opens for first time
+window._dashInitDone = false;
+function initDashboardIfNeeded() {
+  if (window._dashInitDone) return;
+  window._dashInitDone = true;
+  // Show placeholder if no data loaded yet
+  if (RAW.grand_total === 0) {
+    const placeholder = document.getElementById('dash-placeholder');
+    if (placeholder) placeholder.style.display = 'block';
+  }
+  rebuildDropdown();
+  renderSupplierBars();
+  update();
+  renderConcentration();
+  // Auto-load shared files from Abrechnung tab
+  setTimeout(function() {
+    if (window._sharedHerstellerBuf && window._sharedHerstellerBuf.buf) {
+      try {
+        const wb = XLSX.read(window._sharedHerstellerBuf.buf, {type:'array'});
+        const ws = wb.Sheets[wb.SheetNames[0]];
+        const rows = XLSX.utils.sheet_to_json(ws, {header:1, defval:0, raw:true});
+        // parseExcel is the dashboard's file parser
+        const parsed = parseExcel(new Uint8Array(window._sharedHerstellerBuf.buf).buffer);
+        RAW = parsed;
+        RAW.art_count = Object.values(parsed.data['Alle']?.all_nrs || {}).length || 359;
+        rebuildDropdown();
+        renderSupplierBars();
+        update();
+        renderConcentration();
+        // Update upload button label
+        const btn = document.getElementById('time-btn');
+        const herstellerBtn = document.querySelector('.import-btn:not(#time-btn)');
+        if (herstellerBtn) herstellerBtn.style.background = '#0a5c33';
+        const ph = document.getElementById('dash-placeholder');
+        if (ph) ph.style.display = 'none';
+      } catch(e) { console.log('Auto-load Hersteller:', e.message); }
+    }
+    if (window._sharedDatumBuf && window._sharedDatumBuf.buf) {
+      try {
+        TIME_DATA = parseTimeExcel(window._sharedDatumBuf.buf);
+        // Enable tabs 5-7 — retry until elements exist in DOM
+        function enableTimeTabs(attempts) {
+          const btn4 = document.getElementById('tab-btn-4');
+          if (!btn4 && attempts > 0) { setTimeout(function(){ enableTimeTabs(attempts-1); }, 100); return; }
+          [4,5,6].forEach(i => {
+            const btn = document.getElementById('tab-btn-' + i);
+            if (btn) { btn.disabled = false; btn.title = ''; }
+          });
+          const hint = document.getElementById('time-hint');
+          if (hint) hint.style.display = 'none';
+          const tBtn = document.getElementById('time-btn');
+          if (tBtn) tBtn.style.background = '#0a5c33';
+          enablePeriodFilter();
+        }
+        enableTimeTabs(10);
+      } catch(e) { console.log('Auto-load Datum:', e.message); }
+    }
+  }, 200);
+}
+</script>
+
+  </div>
+</div>
+
+
+
+<script>
+const SUPPLIER_DATA = {"bodyproducts": {"firma": "Body Products GmbH", "knr": "1006", "strasse": "Alfred-Nobel-Str. 1-3", "plz": "50226", "ort": "Frechen", "land": "Deutschland", "email": "e-rechnung@body-products.de"}, "Boston Scientific": {"firma": "Boston Scientific Medizintechnik GmbH", "knr": "1007", "strasse": "Klaus-Bungert-Str. 8", "plz": "40468", "ort": "Düsseldorf", "land": "Deutschland", "email": "servet.zorba@bsci.com"}, "DACH": {"firma": "DACH Schutzbekleidung GmbH & Co. KG", "knr": "1009", "strasse": "Rotackerstr. 21", "plz": "76437", "ort": "Rastatt", "land": "Deutschland", "email": "fibu@dach-germany.de"}, "Edlich & Habel": {"firma": "Edlich & Habel c/o SE Innovate GmbH", "knr": "1010", "strasse": "Bäckerstr. 6", "plz": "21244", "ort": "Buchholz in der Nordheide", "land": "Deutschland", "email": "miroslaw.wellinski@edlich-habel.com"}, "Endo-Flex": {"firma": "Endo-flex GmbH", "knr": "1011", "strasse": "Alte Hünxer Str. 113", "plz": "46562", "ort": "Voerde", "land": "Deutschland", "email": "haiker@medi-globe.de"}, "Fujifilm": {"firma": "FUJIFILM Healthcare Deutschland GmbH", "knr": "", "strasse": "Balcke-Dürr-Allee 6", "plz": "40882", "ort": "Ratingen", "land": "Deutschland", "email": "christoph.rueter@fujifilm.com", "kontakt": "Christoph Rüter (Key Account Manager Endoskopie)", "mobil": "0151 16338010", "gutschrift": true}, "HMK Medical": {"firma": "HMK Hanseatic Medical Kontor UG", "knr": "1013", "strasse": "Luisenweg 7", "plz": "20537", "ort": "Hamburg", "land": "Deutschland", "email": "aleksandrov@hmk-medical.de"}, "InMedi Service GmbH": {"firma": "InMedi service GmbH", "knr": "1014", "strasse": "Langer Acker 3", "plz": "30900", "ort": "Wedemark", "land": "Deutschland", "email": "ims-rechnung@inmedi.de"}, "Loremed": {"firma": "Loremed GmbH", "knr": "1015", "strasse": "Gewerbering 10", "plz": "22113", "ort": "Oststeinbek", "land": "Deutschland", "email": "info@loremed.de"}, "mandel+rupp": {"firma": "Mandel+ Rupp Medizintechnik GmbH", "knr": "1016", "strasse": "Gruitener Str. 11", "plz": "40699", "ort": "Erkrath", "land": "Deutschland", "email": "info@mandel-rupp.de"}, "MIC": {"firma": "Medical Instruments Corporation GmbH", "knr": "1018", "strasse": "Oststr. 69", "plz": "32051", "ort": "Herford", "land": "Deutschland", "email": "birgit.holz@micgmbh.de"}, "Micro-Tech Endoscopy": {"firma": "Micro-Tech Europe GmbH", "knr": "1019", "strasse": "Mündelheimer Weg 36", "plz": "40472", "ort": "Düsseldorf", "land": "Deutschland", "email": "thilo.krannich@mtmed.com"}, "MTW": {"firma": "MTW-Endoskopie", "knr": "1020", "strasse": "Goldsbergstr. 18", "plz": "46487", "ort": "Wesel", "land": "Deutschland", "email": "rechnung@mtw-endoskopie.com"}, "Olympus": {"firma": "(kein Kontakt)", "knr": "", "strasse": "", "plz": "", "ort": "", "land": "", "email": ""}, "Pentax Medical": {"firma": "PENTAX Europe GmbH", "knr": "1022", "strasse": "Julius-Vosseler-Str. 104", "plz": "22527", "ort": "Hamburg", "land": "Deutschland", "email": "incominginvoice.emea@pentaxmedical.com"}, "phames": {"firma": "phames GmbH", "knr": "1023", "strasse": "Erzbergerstr. 7", "plz": "78224", "ort": "Singen", "land": "Deutschland", "email": "rechnung@phames.de"}, "TPM LÜBBE": {"firma": "TECNO PRO MEDICA-LÜBBE GmbH & Co. KG", "knr": "1025", "strasse": "Werner-Heisenberg-Str. 11a", "plz": "52477", "ort": "Alsdorf", "land": "Deutschland", "email": "tanja.duda@tpm-luebbe.de", "telefon": "02404 94110"}, "Wassenburg": {"firma": "Wassenburg Deutschland GmbH", "knr": "1026", "strasse": "Krefelder Str. 350", "plz": "41066", "ort": "Mönchengladbach", "land": "Deutschland", "email": "info@wassenburgmedical.de"}, "Medtronic": {"firma": "Medtronic GmbH", "knr": "1017", "strasse": "Earl-Bakken-Platz 1", "plz": "40670", "ort": "Meerbusch", "land": "Deutschland", "email": "invoice@medtronic.com"}, "endorepair": {"firma": "endorepair GmbH", "knr": "1012", "strasse": "Argelsrieder Feld 12", "plz": "82234", "ort": "Weßling", "land": "Deutschland", "email": "invoice@endorepair.de"}, "Endorepair": {"firma": "endorepair GmbH", "knr": "1012", "strasse": "Argelsrieder Feld 12", "plz": "82234", "ort": "Weßling", "land": "Deutschland", "email": "invoice@endorepair.de"}, "Solgiene oHG": {"firma": "Solgiene oHG", "knr": "1328", "strasse": "Kronprizstr. 47-49", "plz": "40764", "ort": "Langenfeld", "land": "Deutschland", "email": "info@solgiene.de"}, "STERIS Deutschland GmbH": {"firma": "STERIS Deutschland GmbH", "knr": "1024", "strasse": "Eupener Str. 70", "plz": "50933", "ort": "Köln", "land": "Deutschland", "email": "simona_landshut@steris.com"}, "TPM LÃœBBE": {"firma": "TECNO PRO MEDICA-LÜBBE GmbH & Co. KG", "knr": "1025", "strasse": "Werner-Heisenberg-Str. 11a", "plz": "52477", "ort": "Alsdorf", "land": "Deutschland", "email": "tanja.duda@tpm-luebbe.de", "telefon": "02404 94110"}, "TPM LÃŒBBE": {"firma": "TECNO PRO MEDICA-LÜBBE GmbH & Co. KG", "knr": "1025", "strasse": "Werner-Heisenberg-Str. 11a", "plz": "52477", "ort": "Alsdorf", "land": "Deutschland", "email": "tanja.duda@tpm-luebbe.de", "telefon": "02404 94110"}};
+
+
+const portalFmt = n => (n||0).toLocaleString('de-DE',{minimumFractionDigits:2,maximumFractionDigits:2}) + ' \u20ac';
+
+// ── State ─────────────────────────────────────────────────────
+let DATA = {
+  hersteller: null,   // {suppliers: [{name, total}], artSupplier: {nr: name}}
+  datum: null,        // {months: ['2026-01',...], artMonthly: {nr: {'2026-01': val}}}
+  rows: [],           // built invoice rows
+  period: '',
+  doneMap: {}
+};
+
+// ── Navigation ────────────────────────────────────────────────
+function showPage(id) {
+  document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+  document.querySelectorAll('.nav-tab').forEach(t => t.classList.remove('active'));
+  document.getElementById('page-' + id).classList.add('active');
+  document.getElementById('tab-' + id).classList.add('active');
+  if (id === 'verlauf') renderHistory();
+  if (id === 'dashboard') { setTimeout(initDashboardIfNeeded, 100); }
+}
+
+// ── Encoding fix (cp1252 bytes stored as unicode) ─────────────
+function fixStr(s) {
+  const cp1252 = {0x20AC:0x80,0x201A:0x82,0x0192:0x83,0x201E:0x84,0x2026:0x85,0x2020:0x86,0x2021:0x87,0x02C6:0x88,0x2030:0x89,0x0160:0x8A,0x2039:0x8B,0x0152:0x8C,0x017D:0x8E,0x2018:0x91,0x2019:0x92,0x201C:0x93,0x201D:0x94,0x2022:0x95,0x2013:0x96,0x2014:0x97,0x02DC:0x98,0x2122:0x99,0x0161:0x9A,0x203A:0x9B,0x0153:0x9C,0x017E:0x9E,0x0178:0x9F};
+  const u2b = {};
+  Object.entries(cp1252).forEach(([b,u]) => u2b[u] = +b);
+  const str = String(s||'');
+  // Only fix strings with mojibake (U+00C3 followed by special cp1252 char)
+  let hasMojibake = false;
+  const chars = [...str];
+  for (let i = 0; i < chars.length - 1; i++) {
+    const cp = chars[i].codePointAt(0);
+    const cpn = chars[i+1].codePointAt(0);
+    if (cp === 0xC3 && (u2b[cpn] !== undefined || (cpn >= 0x80 && cpn <= 0xBF))) { hasMojibake = true; break; }
+  }
+  if (!hasMojibake) return str;
+  const bytes = [];
+  for (const ch of str) {
+    const cp = ch.codePointAt(0);
+    if (cp < 0x80) bytes.push(cp);
+    else if (u2b[cp] !== undefined) bytes.push(u2b[cp]);
+    else if (cp <= 0xFF) bytes.push(cp);
+    else for (const b of new TextEncoder().encode(ch)) bytes.push(b);
+  }
+  try {
+    const result = new TextDecoder('utf-8').decode(new Uint8Array(bytes));
+    return result.includes('�') ? str : result;
+  }
+  catch { return str; }
+}
+
+// ── Drop handling ─────────────────────────────────────────────
+function handleDrop(e, type) {
+  e.preventDefault();
+  document.getElementById('uz-' + (type==='hersteller'?'hersteller':'datum')).classList.remove('drag');
+  const file = e.dataTransfer.files[0];
+  if (file) loadFileObj(file, type);
+}
+function loadFile(input, type) { if (input.files[0]) loadFileObj(input.files[0], type); }
+
+function loadFileObj(file, type) {
+  const reader = new FileReader();
+  reader.onload = function(ev) {
+    try {
+      const buf = ev.target.result;
+      // Store for Dashboard sharing
+      if (type === 'hersteller') window._sharedHerstellerBuf = {buf, name: file.name};
+      else window._sharedDatumBuf = {buf, name: file.name};
+      const wb = XLSX.read(buf, {type:'array', cellDates:true});
+      const ws = wb.Sheets[wb.SheetNames[0]];
+      const rows = XLSX.utils.sheet_to_json(ws, {header:1, defval:0, raw:true});
+      if (type === 'hersteller') parseHersteller(rows, file.name);
+      else parseDatum(rows, file.name);
+    } catch(err) { showToast('Fehler: ' + err.message, true); }
+  };
+  reader.readAsArrayBuffer(file);
+}
+
+// ── Parse Hersteller file ─────────────────────────────────────
+function parseHersteller(rows, fname) {
+  const header = rows[0].map(c => fixStr(String(c||'')));
+  const gesamtIdx = header.indexOf('Gesamt');
+  const artIdx = 0;
+
+  // Supplier columns: skip art, Gesamt, Ø, Kein Hersteller, Wassenburg
+  const exclude = new Set(['Artikel: Artikelnummer + Artikelname','Gesamt','Kein Hersteller','Wassenburg']);
+  const supCols = [];
+  // Explicit name corrections for known encoding issues
+  const NAME_FIX = {'TPM LÃœBBE': 'TPM LÜBBE', 'TPM LÃŒBBE': 'TPM LÜBBE', 'TPM LÃBBE': 'TPM LÜBBE'};
+  header.forEach((h, i) => {
+    let hf = fixStr(h);
+    // Apply explicit corrections
+    if (NAME_FIX[hf]) hf = NAME_FIX[hf];
+    if (NAME_FIX[h]) hf = NAME_FIX[h];
+    // Catch any TPM variant regardless of encoding
+    if (/^TPM L.BBE$/i.test(hf) || /^TPM L.BBE$/i.test(h)) hf = 'TPM LÜBBE';
+    if (!exclude.has(hf) && i > 0 && i < header.length - 2 && !hf.includes('\u00c3')) {
+      supCols.push({name: hf, idx: i});
+    }
+  });
+
+  // Article -> supplier map and supplier totals
+  const artSupplier = {};
+  const supTotals = {};
+  supCols.forEach(s => supTotals[s.name] = 0);
+
+  for (let r = 1; r < rows.length; r++) {
+    const row = rows[r];
+    const artRaw = fixStr(String(row[artIdx]||''));
+    if (!artRaw || artRaw.startsWith('Gesamt')) continue;
+    const nr = artRaw.split(' - (')[0].trim();
+    supCols.forEach(s => {
+      const v = parseFloat(row[s.idx]) || 0;
+      if (v > 0) {
+        if (!artSupplier[nr]) artSupplier[nr] = s.name;
+        supTotals[s.name] += v;
+      }
+    });
+  }
+  // Round
+  Object.keys(supTotals).forEach(k => supTotals[k] = Math.round(supTotals[k]*100)/100);
+
+  DATA.hersteller = { supTotals, artSupplier, fname };
+  document.getElementById('uz-hersteller').classList.add('loaded');
+  document.getElementById('uz-h-title').textContent = '\u2713 ' + fname;
+  document.getElementById('uz-h-sub').textContent = supCols.length + ' Lieferanten erkannt';
+
+  tryBuildPeriods();
+}
+
+// ── Parse Datum file ──────────────────────────────────────────
+function parseDatum(rows, fname) {
+  const header = rows[0];
+  const dateCols = [];
+  for (let i = 1; i < header.length - 2; i++) {
+    const h = header[i];
+    let month = null;
+    if (h instanceof Date && !isNaN(h)) {
+      month = h.getFullYear() + '-' + String(h.getMonth()+1).padStart(2,'0');
+    } else if (typeof h === 'number' && h > 40000) {
+      const d = new Date(Math.round((h-25569)*86400*1000));
+      month = d.getUTCFullYear() + '-' + String(d.getUTCMonth()+1).padStart(2,'0');
+    }
+    if (month) dateCols.push({idx: i, month});
+  }
+  if (!dateCols.length) { showToast('Keine Datumsspalten erkannt', true); return; }
+
+  const months = [...new Set(dateCols.map(d => d.month))].sort();
+
+  // Article monthly sums
+  const artMonthly = {};
+  for (let r = 1; r < rows.length; r++) {
+    const row = rows[r];
+    const artRaw = fixStr(String(row[0]||''));
+    if (!artRaw || artRaw.startsWith('Gesamt')) continue;
+    const nr = artRaw.split(' - (')[0].trim();
+    dateCols.forEach(dc => {
+      const v = parseFloat(row[dc.idx]) || 0;
+      if (v) {
+        if (!artMonthly[nr]) artMonthly[nr] = {};
+        artMonthly[nr][dc.month] = Math.round(((artMonthly[nr][dc.month]||0) + v)*100)/100;
+      }
+    });
+  }
+
+  DATA.datum = { months, artMonthly, fname };
+  document.getElementById('uz-datum').classList.add('loaded');
+  document.getElementById('uz-d-title').textContent = '\u2713 ' + fname;
+  document.getElementById('uz-d-sub').textContent = months.length + ' Monate: ' + months[0] + ' \u2013 ' + months[months.length-1];
+
+  tryBuildPeriods();
+}
+
+// ── Build period options once both files loaded ───────────────
+function tryBuildPeriods() {
+  if (!DATA.hersteller || !DATA.datum) return;
+  const months = DATA.datum.months;
+
+  // Detect quarters
+  const qMap = {'01':'Q1','02':'Q1','03':'Q1','04':'Q2','05':'Q2','06':'Q2','07':'Q3','08':'Q3','09':'Q3','10':'Q4','11':'Q4','12':'Q4'};
+  const quarters = {};
+  months.forEach(m => {
+    const [y, mo] = m.split('-');
+    const q = qMap[mo] + '/' + y;
+    if (!quarters[q]) quarters[q] = [];
+    quarters[q].push(m);
+  });
+
+  const sel = document.getElementById('period-sel');
+  sel.innerHTML = '';
+  // Add quarter options
+  Object.entries(quarters).forEach(([q, ms]) => {
+    const opt = document.createElement('option');
+    opt.value = ms.join(',');
+    opt.textContent = q + ' (' + ms[0] + ' \u2013 ' + ms[ms.length-1] + ')';
+    sel.appendChild(opt);
+  });
+  // Add individual months
+  months.forEach(m => {
+    const opt = document.createElement('option');
+    opt.value = m;
+    const d = new Date(m + '-01');
+    opt.textContent = d.toLocaleDateString('de-DE',{year:'numeric',month:'long'});
+    sel.appendChild(opt);
+  });
+  // Full period
+  if (months.length > 3) {
+    const opt = document.createElement('option');
+    opt.value = months.join(',');
+    opt.textContent = 'Gesamtzeitraum (' + months[0] + ' \u2013 ' + months[months.length-1] + ')';
+    sel.appendChild(opt);
+  }
+
+  sel.disabled = false;
+  buildInvoices();
+}
+
+// ── Build invoice rows ────────────────────────────────────────
+function buildInvoices() {
+  if (!DATA.hersteller || !DATA.datum) return;
+  const selMonths = new Set(document.getElementById('period-sel').value.split(',').filter(Boolean));
+  const periodLabel = document.getElementById('period-sel').selectedOptions[0]?.textContent || '';
+
+  const savedState = loadFromStorage();
+  const doneMap = savedState ? savedState.doneMap : {};
+
+  let hasDiff = false;
+  const rows = [];
+
+  Object.entries(DATA.hersteller.supTotals).forEach(([name, hTotal]) => {
+    if (hTotal === 0 && !Object.values(DATA.hersteller.artSupplier).includes(name)) return;
+
+    // Compute BOTH hersteller-period and datum-period from the Datum file
+    // using article->supplier mapping from Hersteller file
+    let dTotal = 0;   // datum file, selected period
+    let hPeriod = 0;  // datum file, FULL range (matches Hersteller total)
+    const allMonths = DATA.datum.months;
+
+    Object.entries(DATA.hersteller.artSupplier).forEach(([nr, sup]) => {
+      if (sup !== name) return;
+      const monthly = DATA.datum.artMonthly[nr];
+      if (!monthly) return;
+      selMonths.forEach(m => { dTotal += monthly[m] || 0; });
+      allMonths.forEach(m => { hPeriod += monthly[m] || 0; });
+    });
+    dTotal = Math.round(dTotal * 100) / 100;
+    hPeriod = Math.round(hPeriod * 100) / 100;
+
+    // Skip if zero in both files for this period
+    if (dTotal === 0 && hTotal === 0) return;
+
+    // Diff: compare hersteller file total vs datum file full-range total
+    // (should be identical if files are consistent)
+    const diff = Math.abs(hPeriod - hTotal) > 1;
+    if (diff) hasDiff = true;
+
+    // Normalize supplier name for lookup
+    let lookupName = name;
+    if (name.startsWith('TPM L') && name.endsWith('BBE')) lookupName = 'TPM LÜBBE';
+    const sup = SUPPLIER_DATA[lookupName] || SUPPLIER_DATA[name] || {};
+    const periodKey = name + '_' + periodLabel;
+    const isGutschrift = !!(sup.gutschrift);
+
+    rows.push({
+      name,
+      firma: sup.firma || name,
+      knr: sup.knr || '',
+      strasse: sup.strasse || '',
+      plz: sup.plz || '',
+      ort: sup.ort || '',
+      email: sup.email || '',
+      kontakt: sup.kontakt || '',
+      hTotal: hPeriod,
+      dTotal,
+      diff,
+      userKorrektur: '',
+      done: !!(doneMap[periodKey]),
+      noContact: !sup.knr && !isGutschrift,
+      gutschrift: isGutschrift
+    });
+  });
+
+  DATA.rows = rows;
+  DATA.period = periodLabel;
+  DATA.doneMap = doneMap;
+
+  document.getElementById('nav-badge').textContent = periodLabel;
+  document.getElementById('kpi-period').textContent = periodLabel;
+  document.getElementById('kpi-section').style.display = 'block';
+  document.getElementById('diff-warning').className = 'diff-warning' + (hasDiff ? ' show' : '');
+
+  updateKPIs();
+  renderTable();
+}
+
+// ── Effective umsatz ──────────────────────────────────────────
+function effectiveU(row) {
+  if (row.userKorrektur !== '') {
+    const v = parseFloat(row.userKorrektur.replace(',','.'));
+    return isNaN(v) ? row.dTotal : v;
+  }
+  return row.dTotal;
+}
+
+// ── KPIs ──────────────────────────────────────────────────────
+function updateKPIs() {
+  let totU = 0, totP = 0, openN = 0, openG = 0;
+  DATA.rows.forEach(r => {
+    const u = effectiveU(r);
+    if (u > 0 && !r.noContact) {
+      totU += u;
+      totP += u * 0.03;
+      if (!r.done && !r.gutschrift) { openN++; openG += u * 0.03 * 1.19; }
+    }
+  });
+  document.getElementById('kpi-umsatz').textContent = portalFmt(totU);
+  document.getElementById('kpi-prov').textContent = portalFmt(totP);
+  document.getElementById('kpi-prov-sub').textContent = 'Brutto: ' + portalFmt(totP * 1.19);
+  document.getElementById('kpi-open').textContent = openN + ' Rechnungen';
+  document.getElementById('kpi-open-sub').textContent = portalFmt(openG) + ' ausstehend';
+}
+
+// ── Render table ──────────────────────────────────────────────
+function renderTable() {
+  const filter = document.getElementById('filter-status').value;
+  let rows = [...DATA.rows].sort((a,b) => {
+    const as = a.done?2:(a.noContact||effectiveU(a)===0?3:1);
+    const bs = b.done?2:(b.noContact||effectiveU(b)===0?3:1);
+    return as-bs || a.name.localeCompare(b.name);
+  });
+  if (filter === 'open') rows = rows.filter(r => !r.done && !r.noContact && effectiveU(r) > 0);
+  if (filter === 'done') rows = rows.filter(r => r.done);
+
+  let html = '';
+  rows.forEach(function(r) {
+    const u = effectiveU(r);
+    const prov = u * 0.03;
+    const mwst = prov * 0.19;
+    const gross = prov + mwst;
+    const nameEsc = r.name.replace(/\\/g,'\\\\').replace(/'/g,"\\'");
+    const hasMod = r.userKorrektur !== '';
+
+    let badge = '';
+    if (r.done) badge = '<span class="badge b-done">\u2713 Erledigt</span>';
+    else if (r.noContact) badge = '<span class="badge b-missing">Kein Kontakt</span>';
+    else if (r.diff && !hasMod) badge = '<span class="badge b-diff">\u26a0 Abw.</span>';
+    else if (u === 0) badge = '<span class="badge b-missing">Kein Umsatz</span>';
+    else badge = '<span class="badge b-ok">Ausstehend</span>';
+
+    const canMark = !r.done && !r.noContact && u > 0;
+
+    // Datum column: show diff hint if different from hersteller
+    let dColStyle = '';
+    let dColHint = '';
+    if (r.diff && !hasMod) {
+      dColStyle = 'color:var(--amber);font-weight:700';
+      dColHint = ' <span title="Hersteller-Datei weicht ab: '+ portalFmt(r.hTotal) +' (gesamt). Bitte Korrektur pr\u00fcfen." style="cursor:help">&#9432;</span>';
+    }
+
+    let corrCell = '';
+    if (!r.done && u > 0) {
+      corrCell = '<input class="corr-input' + (hasMod?' mod':'') + '" type="text" placeholder="' + (r.diff?portalFmt(r.dTotal):'') + '" value="' + r.userKorrektur + '" onchange="setKorrektur(\'' + nameEsc + '\',this.value)" title="Korrigierten Nettobetrag eingeben">';
+    } else {
+      corrCell = hasMod ? portalFmt(parseFloat(r.userKorrektur.replace(',','.'))) : '—';
+    }
+
+    html += '<tr class="' + (r.done?'done':'') + '">';
+    html += '<td><div style="font-weight:600">' + r.name + '</div>' + (r.knr?'<div style="font-size:.71rem;color:var(--muted)">KNr. ' + r.knr + '</div>':'') + '</td>';
+    html += '<td style="font-size:.78rem">';
+    if (r.firma !== '(kein Kontakt)') {
+      html += '<div style="font-weight:600;color:var(--text)">' + r.firma + '</div>';
+      if (r.kontakt) html += '<div style="color:var(--muted)">' + r.kontakt + '</div>';
+      if (r.plz) html += '<div style="color:var(--muted)">' + r.plz + ' ' + r.ort + '</div>';
+      if (r.email) html += '<div style="color:var(--muted)">' + r.email + '</div>';
+    } else {
+      html += '<span style="color:var(--red);font-style:italic">nicht hinterlegt</span>';
+    }
+    html += '</td>';
+    html += '<td class="r" style="color:var(--muted);font-size:.78rem">' + (r.hTotal>0?portalFmt(r.hTotal):'—') + '</td>';
+    html += '<td class="r" style="' + dColStyle + '">' + (r.dTotal>0?portalFmt(r.dTotal):'—') + dColHint + '</td>';
+    html += '<td class="r">' + corrCell + '</td>';
+    html += '<td class="r" style="color:var(--bng-green-dark);font-weight:700">' + (u>0?portalFmt(prov):'—') + '</td>';
+    html += '<td class="r" style="color:var(--muted)">' + (u>0?portalFmt(mwst):'—') + '</td>';
+    html += '<td class="r" style="font-weight:700">' + (u>0?portalFmt(gross):'—') + '</td>';
+    html += '<td>' + badge + '</td>';
+        var actionBtn = '';
+    if (r.gutschrift) { actionBtn = '<span style="font-size:.72rem;color:#6b21a8;font-style:italic">wird gutgeschrieben</span>'; }
+    else if (canMark) { actionBtn = '<button class="btn btn-primary btn-sm" onclick="markDone(\'' + nameEsc + '\')">✓ Erledigt</button>'; }
+    else if (r.done) { actionBtn = '<button class="btn btn-sm btn-secondary" onclick="resetDone(\'' + nameEsc + '\')" title="Als offen markieren">↩ Zurück</button>'; }
+    html += '<td>' + actionBtn + '</td>';
+    html += '</tr>';
+  });
+  document.getElementById('inv-body').innerHTML = html;
+
+  // Footer
+  const vis = rows.filter(r => effectiveU(r) > 0 && !r.noContact);
+  const tU = vis.reduce((s,r) => s + effectiveU(r), 0);
+  const tP = tU * 0.03;
+  document.getElementById('inv-foot').innerHTML =
+    '<tr style="background:#f8fafc;font-weight:700;border-top:2px solid var(--border)">' +
+    '<td colspan="2" style="padding:10px 14px;font-size:.8rem">Summe (' + vis.length + ' Lieferanten)</td>' +
+    '<td class="r" style="padding:10px 14px;color:var(--muted)">—</td>' +
+    '<td class="r" style="padding:10px 14px;font-weight:700">' + portalFmt(tU) + '</td>' +
+    '<td class="r" style="padding:10px 14px">—</td>' +
+    '<td class="r" style="padding:10px 14px;color:var(--bng-green-dark)">' + portalFmt(tP) + '</td>' +
+    '<td class="r" style="padding:10px 14px;color:var(--muted)">' + portalFmt(tP*0.19) + '</td>' +
+    '<td class="r" style="padding:10px 14px">' + portalFmt(tP*1.19) + '</td>' +
+    '<td colspan="2"></td></tr>';
+}
+
+// ── Actions ───────────────────────────────────────────────────
+function setKorrektur(name, val) {
+  const row = DATA.rows.find(r => r.name === name);
+  if (row) { row.userKorrektur = val; updateKPIs(); renderTable(); }
+}
+
+function markDone(name) {
+  const row = DATA.rows.find(r => r.name === name);
+  if (!row) return;
+  row.done = true;
+  DATA.doneMap[name + '_' + DATA.period] = true;
+  saveState(); updateKPIs(); renderTable();
+  showToast('\u2713 ' + name + ' erledigt');
+}
+
+function resetDone(name) {
+  const row = DATA.rows.find(r => r.name === name);
+  if (!row) return;
+  row.done = false;
+  delete DATA.doneMap[name + '_' + DATA.period];
+  saveState(); updateKPIs(); renderTable();
+  showToast('↩ ' + name + ' wieder geöffnet');
+}
+
+function markAllDone() {
+  DATA.rows.forEach(r => {
+    if (!r.noContact && effectiveU(r) > 0) {
+      r.done = true;
+      DATA.doneMap[r.name + '_' + DATA.period] = true;
+    }
+  });
+  saveState(); updateKPIs(); renderTable();
+  showToast('Alle als erledigt markiert');
+}
+
+// ── Persistence ───────────────────────────────────────────────
+function saveState() {
+  try {
+    const tU = DATA.rows.reduce((s,r) => s + effectiveU(r), 0);
+    // Store full row snapshot for restore
+    const rowSnapshot = DATA.rows.map(r => ({
+      name: r.name, firma: r.firma, knr: r.knr,
+      strasse: r.strasse, plz: r.plz, ort: r.ort, email: r.email,
+      kontakt: r.kontakt || '', gutschrift: r.gutschrift || false,
+      hTotal: r.hTotal, dTotal: r.dTotal,
+      userKorrektur: r.userKorrektur,
+      done: r.done, noContact: r.noContact, diff: r.diff
+    }));
+    const save = {
+      period: DATA.period, doneMap: DATA.doneMap,
+      timestamp: new Date().toISOString(),
+      rows: rowSnapshot,
+      summary: { total: DATA.rows.length, done: DATA.rows.filter(r=>r.done).length, umsatz: tU }
+    };
+    const hist = JSON.parse(localStorage.getItem('bng_billing_history')||'[]');
+    const ei = hist.findIndex(h => h.period === DATA.period);
+    if (ei >= 0) hist[ei] = save; else hist.unshift(save);
+    localStorage.setItem('bng_billing_history', JSON.stringify(hist.slice(0,20)));
+    localStorage.setItem('bng_billing_state', JSON.stringify(save));
+    showToast('Gespeichert');
+  } catch(e) { showToast('Fehler beim Speichern', true); }
+}
+
+function loadFromStorage() {
+  try { const s = localStorage.getItem('bng_billing_state'); return s?JSON.parse(s):null; } catch { return null; }
+}
+
+// ── History ───────────────────────────────────────────────────
+function restoreFromHistory(period) {
+  try {
+    const hist = JSON.parse(localStorage.getItem('bng_billing_history')||'[]');
+    const entry = hist.find(h => h.period === period);
+    if (!entry || !entry.rows) { showToast('Keine gespeicherten Zeilendaten für diesen Zeitraum', true); return; }
+
+    // Restore Abrechnung tab
+    DATA.period = entry.period;
+    DATA.doneMap = entry.doneMap || {};
+    DATA.rows = entry.rows.map(r => ({...r, userKorrektur: r.userKorrektur || ''}));
+    document.getElementById('kpi-section').style.display = 'block';
+    document.getElementById('kpi-period').textContent = entry.period;
+    document.getElementById('nav-badge').textContent = entry.period;
+    const sel = document.getElementById('period-sel');
+    if (sel) { sel.disabled = false; }
+    updateKPIs();
+    renderTable();
+
+    // Also feed Dashboard from saved row data
+    buildDashboardFromRows(entry.rows);
+
+    showPage('abrechnung');
+    showToast('↩ ' + entry.period + ' wiederhergestellt');
+  } catch(e) { showToast('Fehler beim Wiederherstellen: ' + e.message, true); }
+}
+
+function buildDashboardFromRows(rows) {
+  try {
+    // Build RAW structure from saved rows
+    const suppliers = rows.filter(r => !r.noContact && !r.gutschrift).map(r => r.name);
+    const totals = {};
+    const data = {};
+    let grandTotal = 0;
+
+    rows.forEach(function(r) {
+      const u = r.userKorrektur ? parseFloat(r.userKorrektur.replace(',','.')) : r.dTotal;
+      if (!u || u <= 0) return;
+      totals[r.name] = Math.round(u * 100) / 100;
+      grandTotal += u;
+
+      // Build top10/bottom10 from single article placeholder
+      // (we don't have article detail in history, just supplier totals)
+      data[r.name] = {
+        top10: [{nr: r.name, name: r.firma, umsatz: Math.round(u*100)/100}],
+        bottom10: [{nr: r.name, name: r.firma, umsatz: Math.round(u*100)/100}],
+        all_nrs: [r.name]
+      };
+    });
+
+    // Build "Alle" entry
+    const allRows = Object.entries(totals)
+      .sort((a,b) => b[1]-a[1])
+      .map(([name, u]) => ({nr: name, name: rows.find(r=>r.name===name)?.firma||name, umsatz:u}));
+    data['Alle'] = {
+      top10: allRows.slice(0,10),
+      bottom10: [...allRows].reverse().slice(0,10),
+      all_nrs: allRows.map(r=>r.nr)
+    };
+
+    RAW = {
+      suppliers: ['Alle', ...suppliers],
+      data,
+      totals,
+      grand_total: Math.round(grandTotal * 100) / 100
+    };
+    RAW.art_count = suppliers.length;
+
+    // Hide placeholder, update dashboard if already init'd
+    const ph = document.getElementById('dash-placeholder');
+    if (ph) ph.style.display = 'none';
+    if (window._dashInitDone) {
+      rebuildDropdown();
+      renderSupplierBars();
+      update();
+      renderConcentration();
+    } else {
+      window._dashInitDone = false; // allow re-init with new data
+    }
+  } catch(e) { console.log('buildDashboardFromRows error:', e.message); }
+}
+
+function renderHistory() {
+  try {
+    const hist = JSON.parse(localStorage.getItem('bng_billing_history')||'[]');
+    const c = document.getElementById('history-container');
+    if (!hist.length) {
+      c.innerHTML = '<p style="color:var(--muted);font-size:.85rem">Noch keine Abrechnungen gespeichert.</p>';
+      return;
+    }
+
+    let html = '<div class="hist-list">';
+    hist.forEach(function(h) {
+      const u = h.summary ? h.summary.umsatz : 0;
+      const gross = u * 0.03 * 1.19;
+      const done = h.summary ? h.summary.done : 0;
+      const total = h.summary ? h.summary.total : 0;
+      const date = new Date(h.timestamp).toLocaleDateString('de-DE');
+      const hasRows = !!(h.rows && h.rows.length);
+      const periodEsc = h.period.replace(/'/g, "\\'");
+      html += '<div class="hist-item">';
+      html += '<div><div class="hi-label">' + h.period + '</div>';
+      html += '<div class="hi-date">' + date + ' \u00b7 ' + done + '/' + total + ' erledigt</div></div>';
+      html += '<div style="display:flex;align-items:center;gap:10px">';
+      html += '<div style="text-align:right"><div class="hi-amount">' + portalFmt(gross) + '</div>';
+      html += '<div class="hi-prov">Provision brutto \u00b7 Netto ' + portalFmt(u * 0.03) + '</div></div>';
+      if (hasRows) {
+        html += '<button class="btn btn-sm btn-secondary" onclick="restoreFromHistory(\'' + periodEsc + '\')" title="Abrechnung wiederherstellen">\u21a9 Laden</button>';
+      }
+      html += '</div></div>';
+    });
+    html += '</div>';
+
+    // Comparison table if 2+ entries with row data
+    const withRows = hist.filter(function(h) { return h.rows && h.rows.length >= 1; });
+    if (withRows.length >= 2) {
+      html += '<div style="margin-top:24px">';
+      html += '<div style="font-size:.72rem;font-weight:700;text-transform:uppercase;letter-spacing:.6px;color:var(--muted);margin-bottom:12px">Quartalsvergleich</div>';
+      html += '<div style="overflow-x:auto"><table class="inv-table" style="font-size:.8rem"><thead><tr><th>Lieferant</th>';
+      withRows.forEach(function(h) { html += '<th class="r">' + h.period + '</th>'; });
+      if (withRows.length === 2) html += '<th class="r">Ver\u00e4nderung</th>';
+      html += '</tr></thead><tbody>';
+
+      const allNames = [];
+      withRows.forEach(function(h) {
+        h.rows.forEach(function(r) { if (allNames.indexOf(r.name) < 0) allNames.push(r.name); });
+      });
+      allNames.sort();
+
+      allNames.forEach(function(name) {
+        html += '<tr><td style="font-weight:500">' + name + '</td>';
+        const vals = withRows.map(function(h) {
+          const row = h.rows.find(function(r) { return r.name === name; });
+          if (!row) return null;
+          return row.userKorrektur ? parseFloat(row.userKorrektur.replace(',', '.')) : row.dTotal;
+        });
+        vals.forEach(function(v) {
+          html += '<td class="r">' + (v !== null && v > 0 ? portalFmt(v) : '<span style="color:var(--muted)">—</span>') + '</td>';
+        });
+        if (withRows.length === 2 && vals[0] !== null && vals[1] !== null && vals[0] > 0 && vals[1] > 0) {
+          const diff = vals[1] - vals[0];
+          const pct = ((diff / vals[0]) * 100).toFixed(1);
+          const col = diff > 0 ? 'var(--bng-green-dark)' : diff < 0 ? 'var(--red)' : 'var(--muted)';
+          html += '<td class="r" style="color:' + col + ';font-weight:600">' +
+            (diff > 0 ? '+' : '') + portalFmt(diff) +
+            '<br><span style="font-size:.7rem">' + (diff > 0 ? '+' : '') + pct + '%</span></td>';
+        } else if (withRows.length === 2) {
+          html += '<td class="r" style="color:var(--muted)">—</td>';
+        }
+        html += '</tr>';
+      });
+
+      // Totals
+      const d0 = withRows[0].summary ? withRows[0].summary.umsatz : 0;
+      const d1 = withRows[1] ? (withRows[1].summary ? withRows[1].summary.umsatz : 0) : 0;
+      html += '<tr style="background:#f8fafc;font-weight:700;border-top:2px solid var(--border)"><td>Gesamt</td>';
+      withRows.forEach(function(h) {
+        html += '<td class="r">' + portalFmt(h.summary ? h.summary.umsatz : 0) + '</td>';
+      });
+      if (withRows.length === 2 && d0 > 0) {
+        const diff = d1 - d0;
+        const pct = ((diff / d0) * 100).toFixed(1);
+        const col = diff > 0 ? 'var(--bng-green-dark)' : diff < 0 ? 'var(--red)' : 'var(--muted)';
+        html += '<td class="r" style="color:' + col + '">' + (diff > 0 ? '+' : '') + portalFmt(diff) +
+          '<br><span style="font-size:.7rem">' + (diff > 0 ? '+' : '') + pct + '%</span></td>';
+      }
+      html += '</tr></tbody></table></div></div>';
+    }
+
+    c.innerHTML = html;
+  } catch(e) {
+    document.getElementById('history-container').innerHTML = '<p style="color:var(--red)">Fehler: ' + e.message + '</p>';
+  }
+}
+
+// ── Toast ─────────────────────────────────────────────────────
+function showToast(msg, err) {
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.className = 'visible' + (err?' err':'');
+  setTimeout(function(){ t.classList.remove('visible'); }, 2500);
+}
+
+const saved = loadFromStorage();
+if (saved && saved.period) document.getElementById('nav-badge').textContent = saved.period + ' (letzter Stand)';
+</script>
+</body>
+</html>
