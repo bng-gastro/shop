@@ -743,6 +743,20 @@
 </style>
 </head>
 <body>
+<script>
+(function() {
+  var PASS = '//753%zhB';
+  var stored = sessionStorage.getItem('bng_auth');
+  if (stored !== PASS) {
+    var input = prompt('bng service GmbH\nBitte Passwort eingeben:');
+    while (input !== PASS) {
+      if (input === null) { document.body.innerHTML = ''; return; }
+      input = prompt('Falsches Passwort. Bitte erneut eingeben:');
+    }
+    sessionStorage.setItem('bng_auth', PASS);
+  }
+})();
+</script>
 <div id="toast"></div>
 
 <nav class="nav">
