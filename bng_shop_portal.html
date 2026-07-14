@@ -746,14 +746,15 @@
 <script>
 (function() {
   var PASS = '//753%zhB';
-  var stored = sessionStorage.getItem('bng_auth');
-  if (stored !== PASS) {
-    var input = prompt('bng service GmbH\nBitte Passwort eingeben:');
-    while (input !== PASS) {
-      if (input === null) { document.body.innerHTML = ''; return; }
-      input = prompt('Falsches Passwort. Bitte erneut eingeben:');
-    }
-    sessionStorage.setItem('bng_auth', PASS);
+  var stored = localStorage.getItem('bng_auth');
+  if (stored === PASS) return;
+  var input = prompt('bng service GmbH\nBitte Passwort eingeben:');
+  if (input === PASS) {
+    localStorage.setItem('bng_auth', PASS);
+  } else {
+    document.open();
+    document.write('<html><head><meta charset="UTF-8"><title>bng service</title><style>*{box-sizing:border-box;margin:0;padding:0;font-family:Arial,sans-serif}body{background:#f4f6f8;display:flex;align-items:center;justify-content:center;height:100vh}.box{background:#fff;padding:36px 44px;border-radius:12px;box-shadow:0 2px 16px rgba(0,0,0,.1);text-align:center}.logo{font-size:1.4rem;font-weight:900;color:#2a5c1e;margin-bottom:4px}.sub{font-size:.7rem;text-transform:uppercase;letter-spacing:.5px;color:#64748b;margin-bottom:24px}.msg{font-size:.9rem;color:#c0392b;font-weight:600;margin-bottom:8px}.hint{font-size:.8rem;color:#64748b;margin-bottom:24px}button{background:#2a5c1e;color:#fff;border:none;border-radius:8px;padding:10px 28px;font-size:.88rem;font-weight:600;cursor:pointer;font-family:Arial}</style></head><body><div class="box"><div class="logo">bng</div><div class="sub">service GmbH</div><div class="msg">Falsches Passwort</div><div class="hint">Bitte wende dich an deinen Administrator.</div><button onclick="location.reload()">Erneut versuchen</button></div></body></html>');
+    document.close();
   }
 })();
 </script>
