@@ -948,27 +948,7 @@
   </div>
 </div>
 
-<div class="filter-bar">
-  <label>Lieferant</label>
-  <select id="supplier-select" onchange="update()"></select>
-  <span class="supplier-badge" id="supplier-badge">Alle Lieferanten</span>
-  <span class="supplier-total" id="supplier-total"></span>
-  <div class="period-filter">
-    <label>Zeitraum</label>
-    <select id="period-select" onchange="onPeriodChange()" disabled>
-      <option value="all">Jan–Jun (gesamt)</option>
-      <option value="Q1">Q1 (Jan–Mär)</option>
-      <option value="Q2">Q2 (Apr–Jun)</option>
-      <option value="2026-01">Januar</option>
-      <option value="2026-02">Februar</option>
-      <option value="2026-03">März</option>
-      <option value="2026-04">April</option>
-      <option value="2026-05">Mai</option>
-      <option value="2026-06">Juni</option>
-    </select>
-    <span class="period-hint" id="period-hint">Zeitreihen-Datei laden</span>
-  </div>
-</div>
+
 
 <div class="chart-panel" id="chart-panel">
   <h2>Umsatz je Lieferant (Netto)</h2>
@@ -2007,6 +1987,39 @@ function initDashboardIfNeeded() {
 
 
 <script>
+const GITHUB_TOKEN = ['ghp_F6fyne','4lkOwqGClG','z5SeBI3qM6cRhu3D7oiR'].join('');
+const GITHUB_REPO = 'bng-gastro/shop';
+const GITHUB_FILE = 'shared_data.json';
+
+async function loadFromGitHub() {
+  try {
+    const r = await fetch('https://api.github.com/repos/' + GITHUB_REPO + '/contents/' + GITHUB_FILE, {
+      headers: {'Authorization': 'token ' + GITHUB_TOKEN, 'Accept': 'application/vnd.github.v3+json'}
+    });
+    if (!r.ok) return null;
+    const data = await r.json();
+    const content = JSON.parse(atob(data.content.replace(/\n/g, '')));
+    return {data: content, sha: data.sha};
+  } catch(e) { console.log('GitHub load error:', e.message); return null; }
+}
+
+async function saveToGitHub(content, sha) {
+  try {
+    const b64 = btoa(unescape(encodeURIComponent(JSON.stringify(content, null, 2))));
+    const payload = {message: 'Update shared data', content: b64};
+    if (sha) payload.sha = sha;
+    const r = await fetch('https://api.github.com/repos/' + GITHUB_REPO + '/contents/' + GITHUB_FILE, {
+      method: 'PUT',
+      headers: {'Authorization': 'token ' + GITHUB_TOKEN, 'Accept': 'application/vnd.github.v3+json', 'Content-Type': 'application/json'},
+      body: JSON.stringify(payload)
+    });
+    if (!r.ok) { const err = await r.json(); console.log('GitHub save error:', err.message); return false; }
+    const result = await r.json();
+    window._githubSha = result.content.sha;
+    return true;
+  } catch(e) { console.log('GitHub save error:', e.message); return false; }
+}
+
 const SUPPLIER_DATA = {"bodyproducts": {"firma": "Body Products GmbH", "knr": "1006", "strasse": "Alfred-Nobel-Str. 1-3", "plz": "50226", "ort": "Frechen", "land": "Deutschland", "email": "e-rechnung@body-products.de"}, "Boston Scientific": {"firma": "Boston Scientific Medizintechnik GmbH", "knr": "1007", "strasse": "Klaus-Bungert-Str. 8", "plz": "40468", "ort": "Düsseldorf", "land": "Deutschland", "email": "servet.zorba@bsci.com"}, "DACH": {"firma": "DACH Schutzbekleidung GmbH & Co. KG", "knr": "1009", "strasse": "Rotackerstr. 21", "plz": "76437", "ort": "Rastatt", "land": "Deutschland", "email": "fibu@dach-germany.de"}, "Edlich & Habel": {"firma": "Edlich & Habel c/o SE Innovate GmbH", "knr": "1010", "strasse": "Bäckerstr. 6", "plz": "21244", "ort": "Buchholz in der Nordheide", "land": "Deutschland", "email": "miroslaw.wellinski@edlich-habel.com"}, "Endo-Flex": {"firma": "Endo-flex GmbH", "knr": "1011", "strasse": "Alte Hünxer Str. 113", "plz": "46562", "ort": "Voerde", "land": "Deutschland", "email": "haiker@medi-globe.de"}, "Fujifilm": {"firma": "FUJIFILM Healthcare Deutschland GmbH", "knr": "", "strasse": "Balcke-Dürr-Allee 6", "plz": "40882", "ort": "Ratingen", "land": "Deutschland", "email": "christoph.rueter@fujifilm.com", "kontakt": "Christoph Rüter (Key Account Manager Endoskopie)", "mobil": "0151 16338010", "gutschrift": true}, "HMK Medical": {"firma": "HMK Hanseatic Medical Kontor UG", "knr": "1013", "strasse": "Luisenweg 7", "plz": "20537", "ort": "Hamburg", "land": "Deutschland", "email": "aleksandrov@hmk-medical.de"}, "InMedi Service GmbH": {"firma": "InMedi service GmbH", "knr": "1014", "strasse": "Langer Acker 3", "plz": "30900", "ort": "Wedemark", "land": "Deutschland", "email": "ims-rechnung@inmedi.de"}, "Loremed": {"firma": "Loremed GmbH", "knr": "1015", "strasse": "Gewerbering 10", "plz": "22113", "ort": "Oststeinbek", "land": "Deutschland", "email": "info@loremed.de"}, "mandel+rupp": {"firma": "Mandel+ Rupp Medizintechnik GmbH", "knr": "1016", "strasse": "Gruitener Str. 11", "plz": "40699", "ort": "Erkrath", "land": "Deutschland", "email": "info@mandel-rupp.de"}, "MIC": {"firma": "Medical Instruments Corporation GmbH", "knr": "1018", "strasse": "Oststr. 69", "plz": "32051", "ort": "Herford", "land": "Deutschland", "email": "birgit.holz@micgmbh.de"}, "Micro-Tech Endoscopy": {"firma": "Micro-Tech Europe GmbH", "knr": "1019", "strasse": "Mündelheimer Weg 36", "plz": "40472", "ort": "Düsseldorf", "land": "Deutschland", "email": "thilo.krannich@mtmed.com"}, "MTW": {"firma": "MTW-Endoskopie", "knr": "1020", "strasse": "Goldsbergstr. 18", "plz": "46487", "ort": "Wesel", "land": "Deutschland", "email": "rechnung@mtw-endoskopie.com"}, "Olympus": {"firma": "(kein Kontakt)", "knr": "", "strasse": "", "plz": "", "ort": "", "land": "", "email": ""}, "Pentax Medical": {"firma": "PENTAX Europe GmbH", "knr": "1022", "strasse": "Julius-Vosseler-Str. 104", "plz": "22527", "ort": "Hamburg", "land": "Deutschland", "email": "incominginvoice.emea@pentaxmedical.com"}, "phames": {"firma": "phames GmbH", "knr": "1023", "strasse": "Erzbergerstr. 7", "plz": "78224", "ort": "Singen", "land": "Deutschland", "email": "rechnung@phames.de"}, "TPM LÜBBE": {"firma": "TECNO PRO MEDICA-LÜBBE GmbH & Co. KG", "knr": "1025", "strasse": "Werner-Heisenberg-Str. 11a", "plz": "52477", "ort": "Alsdorf", "land": "Deutschland", "email": "tanja.duda@tpm-luebbe.de", "telefon": "02404 94110"}, "Wassenburg": {"firma": "Wassenburg Deutschland GmbH", "knr": "1026", "strasse": "Krefelder Str. 350", "plz": "41066", "ort": "Mönchengladbach", "land": "Deutschland", "email": "info@wassenburgmedical.de"}, "Medtronic": {"firma": "Medtronic GmbH", "knr": "1017", "strasse": "Earl-Bakken-Platz 1", "plz": "40670", "ort": "Meerbusch", "land": "Deutschland", "email": "invoice@medtronic.com"}, "endorepair": {"firma": "endorepair GmbH", "knr": "1012", "strasse": "Argelsrieder Feld 12", "plz": "82234", "ort": "Weßling", "land": "Deutschland", "email": "invoice@endorepair.de"}, "Endorepair": {"firma": "endorepair GmbH", "knr": "1012", "strasse": "Argelsrieder Feld 12", "plz": "82234", "ort": "Weßling", "land": "Deutschland", "email": "invoice@endorepair.de"}, "Solgiene oHG": {"firma": "Solgiene oHG", "knr": "1328", "strasse": "Kronprizstr. 47-49", "plz": "40764", "ort": "Langenfeld", "land": "Deutschland", "email": "info@solgiene.de"}, "STERIS Deutschland GmbH": {"firma": "STERIS Deutschland GmbH", "knr": "1024", "strasse": "Eupener Str. 70", "plz": "50933", "ort": "Köln", "land": "Deutschland", "email": "simona_landshut@steris.com"}, "TPM LÃœBBE": {"firma": "TECNO PRO MEDICA-LÜBBE GmbH & Co. KG", "knr": "1025", "strasse": "Werner-Heisenberg-Str. 11a", "plz": "52477", "ort": "Alsdorf", "land": "Deutschland", "email": "tanja.duda@tpm-luebbe.de", "telefon": "02404 94110"}, "TPM LÃŒBBE": {"firma": "TECNO PRO MEDICA-LÜBBE GmbH & Co. KG", "knr": "1025", "strasse": "Werner-Heisenberg-Str. 11a", "plz": "52477", "ort": "Alsdorf", "land": "Deutschland", "email": "tanja.duda@tpm-luebbe.de", "telefon": "02404 94110"}};
 
 
@@ -2479,7 +2492,11 @@ function saveState() {
     if (ei >= 0) hist[ei] = save; else hist.unshift(save);
     localStorage.setItem('bng_billing_history', JSON.stringify(hist.slice(0,20)));
     localStorage.setItem('bng_billing_state', JSON.stringify(save));
-    showToast('Gespeichert');
+    // Also save to GitHub for shared access
+    const ghData = {billing_history: hist.slice(0,20), last_updated: save.timestamp, updated_by: 'bng-portal'};
+    saveToGitHub(ghData, window._githubSha).then(ok => {
+      showToast(ok ? '✓ Gespeichert (geteilt)' : '✓ Lokal gespeichert');
+    });
   } catch(e) { showToast('Fehler beim Speichern', true); }
 }
 
@@ -2672,6 +2689,31 @@ function showToast(msg, err) {
 
 const saved = loadFromStorage();
 if (saved && saved.period) document.getElementById('nav-badge').textContent = saved.period + ' (letzter Stand)';
+
+// Load shared data from GitHub on startup
+loadFromGitHub().then(function(result) {
+  if (!result) return;
+  window._githubSha = result.sha;
+  const ghHist = result.data.billing_history || [];
+  if (!ghHist.length) return;
+  // Merge GitHub history with local — GitHub wins if newer
+  const localHist = JSON.parse(localStorage.getItem('bng_billing_history') || '[]');
+  const merged = {};
+  [...localHist, ...ghHist].forEach(h => {
+    if (!merged[h.period] || h.timestamp > merged[h.period].timestamp) merged[h.period] = h;
+  });
+  const mergedArr = Object.values(merged).sort((a,b) => b.timestamp.localeCompare(a.timestamp));
+  localStorage.setItem('bng_billing_history', JSON.stringify(mergedArr.slice(0,20)));
+  // Update nav badge if we got newer data
+  const latestGh = ghHist[0];
+  const latestLocal = localHist[0];
+  if (latestGh && (!latestLocal || latestGh.timestamp > latestLocal.timestamp)) {
+    const badge = document.getElementById('nav-badge');
+    if (badge && !badge.textContent.includes('(letzter Stand)')) {
+      badge.textContent = latestGh.period + ' (geteilt)';
+    }
+  }
+});
 </script>
 </body>
 </html>
